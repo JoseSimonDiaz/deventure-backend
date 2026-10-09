@@ -1,0 +1,2 @@
+# Fuerza LF en todos los archivos de texto (evita problemas CRLF en Windows con husky y Docker)
+* text=auto eol=lf

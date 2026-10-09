@@ -1,0 +1,15 @@
+{
+  "name": "@deventure/eslint-config",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.js",
+  "dependencies": {
+    "@eslint/js": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^16.5.0"
+  },
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  }
+}
