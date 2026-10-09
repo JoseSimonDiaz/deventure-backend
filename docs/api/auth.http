@@ -1,0 +1,37 @@
+### Probar con la extensión "REST Client" de VS Code (botón "Send Request" sobre cada pedido).
+### Requiere el gateway (3000) y auth-service (3001) corriendo.
+@gateway = http://localhost:3000
+
+### Health del gateway
+GET {{gateway}}/health
+
+### Registro
+# @name register
+POST {{gateway}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "Ragnar",
+  "email": "ragnar@kattegat.com",
+  "password": "Valhalla123"
+}
+
+### Login (con usuario o email) — usuario del seed: demo / Demo1234
+# @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "demo",
+  "password": "Demo1234"
+}
+
+### Mi usuario (usa el token del login de arriba)
+GET {{gateway}}/api/auth/me
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Sin token → 401
+GET {{gateway}}/api/auth/me
+
+### Ruta interna desde afuera → 404
+POST {{gateway}}/api/progress/internal/level-completions

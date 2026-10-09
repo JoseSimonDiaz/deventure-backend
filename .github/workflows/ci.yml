@@ -1,0 +1,100 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  HUSKY: 0
+
+jobs:
+  # Detecta qué workspaces cambiaron. Si cambia algo compartido (packages/, package.json o el
+  # lockfile) se testean TODOS.
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      workspaces: ${{ steps.list.outputs.workspaces }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            shared:
+              - 'packages/**'
+              - 'package.json'
+              - 'package-lock.json'
+              - '.github/workflows/**'
+            services/api-gateway: 'services/api-gateway/**'
+            services/auth-service: 'services/auth-service/**'
+            services/content-service: 'services/content-service/**'
+            services/gameplay-service: 'services/gameplay-service/**'
+            services/progress-service: 'services/progress-service/**'
+            services/rewards-service: 'services/rewards-service/**'
+      - id: list
+        run: |
+          ALL='["packages/service-kit","packages/contracts","services/api-gateway","services/auth-service","services/content-service","services/gameplay-service","services/progress-service","services/rewards-service"]'
+          if [ "${{ steps.filter.outputs.shared }}" = "true" ]; then
+            echo "workspaces=$ALL" >> "$GITHUB_OUTPUT"
+          else
+            echo 'workspaces<<EOF' >> "$GITHUB_OUTPUT"
+            echo '${{ steps.filter.outputs.changes }}' | jq -c '[.[] | select(. != "shared")]' >> "$GITHUB_OUTPUT"
+            echo 'EOF' >> "$GITHUB_OUTPUT"
+          fi
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run format:check
+      - name: Validar schemas de Prisma
+        env:
+          DATABASE_URL: postgresql://u:p@localhost:5432/x
+        run: |
+          for schema in services/*/prisma/schema.prisma; do
+            npx prisma validate --schema "$schema"
+          done
+
+  test:
+    needs: changes
+    if: needs.changes.outputs.workspaces != '[]'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        workspace: ${{ fromJSON(needs.changes.outputs.workspaces) }}
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: deventure
+          POSTGRES_PASSWORD: deventure
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U deventure"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    # Los tests de cada servicio usan por defecto postgresql://deventure:deventure@localhost:5432/<servicio>_db_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm test -w ${{ matrix.workspace }}
+
+  # build-web: se agrega cuando exista apps/web (npm run build -w apps/web)

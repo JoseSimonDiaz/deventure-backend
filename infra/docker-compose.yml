@@ -1,0 +1,83 @@
+# Levanta todo el backend: `npm run dev:all` (desde la raíz, con el .env de la raíz).
+# Solo Postgres (para correr los servicios con `npm run dev` en tu máquina): `npm run db:up`.
+name: deventure
+
+x-service: &service
+  restart: unless-stopped
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-deventure}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deventure}
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-deventure}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api-gateway:
+    <<: *service
+    build: { context: .., dockerfile: services/api-gateway/Dockerfile }
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el .env de la raíz}
+      CORS_ORIGIN: http://localhost:5173
+      AUTH_URL: http://auth-service:3001
+      CONTENT_URL: http://content-service:3002
+      GAMEPLAY_URL: http://gameplay-service:3003
+      PROGRESS_URL: http://progress-service:3004
+      REWARDS_URL: http://rewards-service:3005
+    # Único servicio del backend expuesto al host
+    ports:
+      - '3000:3000'
+
+  auth-service:
+    <<: *service
+    build: { context: .., dockerfile: services/auth-service/Dockerfile }
+    environment:
+      NODE_ENV: production
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/auth_db?schema=public
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el .env de la raíz}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
+    expose: ['3001']
+
+  content-service:
+    <<: *service
+    build: { context: .., dockerfile: services/content-service/Dockerfile }
+    environment: { NODE_ENV: production, PORT: 3002, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    expose: ['3002']
+
+  gameplay-service:
+    <<: *service
+    build: { context: .., dockerfile: services/gameplay-service/Dockerfile }
+    environment: { NODE_ENV: production, PORT: 3003, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    expose: ['3003']
+
+  progress-service:
+    <<: *service
+    build: { context: .., dockerfile: services/progress-service/Dockerfile }
+    environment: { NODE_ENV: production, PORT: 3004, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    expose: ['3004']
+
+  rewards-service:
+    <<: *service
+    build: { context: .., dockerfile: services/rewards-service/Dockerfile }
+    environment: { NODE_ENV: production, PORT: 3005, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    expose: ['3005']
+
+  # web: se agrega cuando exista apps/web (DEV-01 frontend)
+
+volumes:
+  pgdata:
