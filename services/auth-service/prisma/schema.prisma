@@ -1,0 +1,137 @@
+// auth-service · base auth_db (puerto 3001) · Prisma 6.19.3
+// Dueño de la identidad: cuenta, credenciales, rol, preferencias y perfil del jugador.
+// Los demás servicios guardan userId (= users.id) como String @db.Uuid SIN foreign key.
+// Seed: usuarios admin y demo con ids FIJOS (constantes compartidas), porque los seeds de progress
+// y rewards (usuario "juego completo", DEV-30/42) insertan filas con ese userId.
+// Borrado de cuenta (DEV-09): DELETE /internal/users/:userId en este orden: gameplay PRIMERO (sus
+// pending_internal_calls del usuario se borran en cascada y el job ya no puede recrear progreso ni
+// recompensas), después progress, rewards y assistant (solo si ASSISTANT_URL está configurada).
+
+generator client {
+  provider      = "prisma-client-js"
+  // native = tu máquina (Windows/Mac/Linux); linux-musl = imagen Docker node:22-alpine
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Viaja en el JWT { sub, role, username }; el gateway exige admin en /api/admin/*
+enum Role {
+  player
+  admin
+
+  @@map("user_role")
+}
+
+// Servicios que guardan datos del usuario y reciben DELETE /internal/users/:userId (DEV-09)
+enum InternalTarget {
+  gameplay
+  progress
+  rewards
+  assistant // solo si DEV-24 está desplegado (ASSISTANT_URL configurada); si no, no se encola
+
+  @@map("internal_target")
+}
+
+// Métodos de las rutas /internal/* que escriben (DEV-41): POST (gameplay → progress/rewards) y
+// DELETE (auth → borrado de cuenta). MISMO enum y misma tabla que en gameplay-service, para que el
+// job de DEV-44 (retryPendingCalls) sea uno solo en service-kit.
+enum HttpMethod {
+  POST
+  DELETE
+
+  @@map("http_method")
+}
+
+enum PendingCallStatus {
+  pending
+  done
+  failed // attempts >= 10: lo ve el admin en GET /admin/pending-calls?status=failed
+
+  @@map("pending_call_status")
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+
+  // Como lo escribió el jugador (3–20, [a-zA-Z0-9_]); se muestra y va en el JWT
+  username      String @db.VarChar(20)
+  // username.toLowerCase(): unicidad sin distinguir mayúsculas ("Ana" = "ana") y login por usuario.
+  // Se setea SIEMPRE junto con username (register, PATCH /auth/me, seed). P2002 aquí => 409 USERNAME_TAKEN
+  usernameLower String @unique @map("username_lower") @db.VarChar(20)
+  // Siempre en minúsculas (Zod: .trim().toLowerCase().max(254)). P2002 aquí => 409 EMAIL_TAKEN
+  email         String @unique @db.VarChar(254)
+  // Hash bcrypt de 10 rondas (60 caracteres). Nunca sale por la API (usar omit en el PrismaClient)
+  passwordHash  String @map("password_hash") @db.VarChar(60)
+
+  role           Role    @default(player)
+  introSeen      Boolean @default(false) @map("intro_seen")
+  // Avatar elegido (DEV-09/31/32): a lo sumo UNO de los dos (los dos null = avatar por defecto;
+  // opcional CHECK (avatar_base IS NULL OR avatar_reward_id IS NULL) en la migración).
+  // Avatar base del juego: "viking-01".."viking-06" (constante del front, no es id de otro servicio)
+  avatarBase     String? @map("avatar_base") @db.VarChar(16)
+  // Reward.id (type avatar) de rewards-service, sin FK. Antes de guardarlo auth verifica con
+  // GET rewards /internal/users/:userId/rewards/:rewardId → { owned, type } que el jugador lo tiene.
+  avatarRewardId String? @map("avatar_reward_id") @db.Uuid
+
+  // Preferencias (DEV-04/05). Forma validada con Zod en contracts (settings.schema.js):
+  // musicVolume/sfxVolume 0–100, musicMuted/sfxMuted bool (al quitar mute vuelve al volumen guardado),
+  // brightness 50–150 (100 = normal). Al leer, mezclar con los defaults por si faltan claves.
+  settings Json @default("{\"musicVolume\":50,\"musicMuted\":false,\"sfxVolume\":70,\"sfxMuted\":false,\"brightness\":100}")
+
+  // Bloqueo de login (DEV-06): 5 fallos dentro de 15 min => locked_until = now + 15 min (423 ACCOUNT_LOCKED)
+  failedLoginCount       Int       @default(0) @map("failed_login_count")
+  // Inicio de la ventana de 15 min en la que se cuentan los fallos
+  failedLoginWindowStart DateTime? @map("failed_login_window_start")
+  lockedUntil            DateTime? @map("locked_until")
+  // Para "jugadores activos en los últimos 7 días" (DEV-34)
+  lastLoginAt            DateTime? @map("last_login_at")
+
+  createdAt DateTime @default(now()) @map("created_at") // "fecha de registro" en Mi cuenta
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // GET /internal/stats/users?from=&to= -> jugadores registrados en el rango
+  @@index([role, createdAt])
+  // activeUsers7d -> role = player AND last_login_at >= now() - 7 días
+  @@index([role, lastLoginAt])
+  @@map("users")
+}
+
+// DEV-44 aplicado en auth: DELETE /internal/users/:userId que falló tras los 2 reintentos
+// del cliente (borrado de cuenta, DEV-09). Job setInterval cada 30 s.
+// Tabla IDÉNTICA a la de gameplay-service (mismas columnas, tipos, enums e índices) para que
+// service-kit tenga un único job retryPendingCalls({ model, clients }) que lee
+// { id, target, method, path, body, correlationId, attempts } y actualiza status / attempts /
+// nextRetryAt / lastError. Única diferencia: la clave de idempotencia (aquí user_id; en gameplay
+// session_id, como pide DEV-44). Sin FK a users: el usuario ya fue borrado cuando se reintenta.
+model PendingInternalCall {
+  id     String         @id @default(uuid()) @db.Uuid
+  target InternalTarget // URL base: GAMEPLAY_URL / PROGRESS_URL / REWARDS_URL / ASSISTANT_URL
+  method HttpMethod // en auth siempre DELETE
+  path   String         @db.VarChar(255) // "/internal/users/<userId>"
+  body   Json? // en auth siempre null (DELETE sin body)
+  userId String         @map("user_id") @db.Uuid // usuario borrado (clave de idempotencia)
+
+  // x-correlation-id del pedido original (DEV-41), para reenviarlo en cada reintento.
+  // Sin largo máximo: el header viene de afuera y un valor largo no debe hacer fallar el INSERT
+  // de la red de seguridad (se perderían los datos a borrar en los otros servicios).
+  correlationId String? @map("correlation_id")
+
+  attempts    Int               @default(0) // reintentos hechos por el job
+  nextRetryAt DateTime          @default(now()) @map("next_retry_at") // now + 30 s × 2^attempts; attempts >= 10 ⇒ failed
+  lastError   String?           @map("last_error")
+  status      PendingCallStatus @default(pending)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at") // momento en que pasó a done/failed (limpieza de 7 días)
+
+  // Idempotencia: el mismo borrado se encola una sola vez por servicio destino (upsert)
+  @@unique([target, userId])
+  // Job: status = pending AND next_retry_at <= now() ORDER BY created_at LIMIT 20.
+  // El prefijo status también cubre GET /admin/pending-calls?status=failed y la limpieza de done.
+  @@index([status, nextRetryAt])
+  @@map("pending_internal_calls")
+}
