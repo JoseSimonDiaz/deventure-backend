@@ -16,8 +16,13 @@ proponer cambios de arquitectura. El código, los mensajes de error y los commit
 Lo más importante, que `npm run lint` hace cumplir en `services/**` y `packages/**`: **sin loops ni
 `map`/`filter`/`some`/`find`/`reduce`/`forEach`/`sort`** (resolverlo en la base o con `Map`/`Set`),
 **sin nombres de una letra**, **sin `console`**, sin `if` anidados y sin comparar contra
+<<<<<<< HEAD
 `null`/`undefined`. **Sin comentarios ni JSDoc** en el código JS (el repo está limpio: no
 volver a agregarlos).
+=======
+`null`/`undefined`. **No agregar comentarios ni JSDoc** en código nuevo; los existentes se quitan
+en un PR de limpieza aparte.
+>>>>>>> 91d40d8 (Development (#1))
 
 Las observaciones abiertas de cada ticket viven en `.claude/reviews/DEV-XX.md`. Al trabajar un
 ticket, leer su archivo si existe.
@@ -114,8 +119,13 @@ acá y se reusa en `validate(...)` (backend) y `zodResolver(...)` (frontend).
 
 `routes → controllers → services → repositories`. Controllers solo traducen HTTP ↔ service; la
 lógica está en `services/`; solo `repositories/` usa `prisma`, y la consulta (`select` o
+<<<<<<< HEAD
 `$queryRaw`) devuelve la forma pública (ej. `PUBLIC_USER_SELECT` en `user.repository.js`).
 `src/db.js` exporta un único `PrismaClient` (auth omite `passwordHash`
+=======
+`$queryRaw`) devuelve la forma pública. `auth-service/src/mappers/user.mapper.js` es anterior a
+esta regla y está pendiente de reemplazo: no copiar ese patrón. `src/db.js` exporta un único `PrismaClient` (auth omite `passwordHash`
+>>>>>>> 91d40d8 (Development (#1))
 por defecto en todas las consultas). Prisma está fijado en **6.19.3**.
 
 **Cliente de Prisma por servicio:** cada `schema.prisma` declara
