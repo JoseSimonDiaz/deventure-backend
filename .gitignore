@@ -11,3 +11,9 @@ coverage/
 .claude/settings.local.json
 .claude/.playwright-mcp/
 graphify-out/
+
+# Clientes de Prisma generados por cada servicio (npm install / prisma generate)
+services/*/generated/
+
+# Repo aparte (backlog y script de Trello), no es parte del monorepo
+Dev-venture/

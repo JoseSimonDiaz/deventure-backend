@@ -7,6 +7,7 @@ export default [
       '**/coverage/**',
       '**/dist/**',
       '**/prisma/migrations/**',
+      '**/generated/**',
       'Dev-venture/**',
       '.claude/**',
     ],

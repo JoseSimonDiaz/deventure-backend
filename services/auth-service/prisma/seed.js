@@ -1,6 +1,6 @@
 import { SEED_USER_IDS } from '@deventure/contracts';
 import { logger } from '@deventure/service-kit';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../generated/prisma-client/index.js';
 import bcrypt from 'bcryptjs';
 
 const SEED_BCRYPT_ROUNDS = 10;

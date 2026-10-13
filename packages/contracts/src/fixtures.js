@@ -2,3 +2,12 @@ export const SEED_USER_IDS = Object.freeze({
   admin: '00000000-0000-4000-8000-000000000001',
   demo: '00000000-0000-4000-8000-000000000002',
 });
+
+export const SEED_CONTENT_IDS = Object.freeze({
+  logicZone: '10000000-0000-4000-8000-000000000001',
+  whatIsAProgramLevel: '11000000-0000-4000-8000-000000000001',
+  variablesLevel: '11000000-0000-4000-8000-000000000002',
+  programDefinitionChallenge: '12000000-0000-4000-8000-000000000001',
+  instructionOrderChallenge: '12000000-0000-4000-8000-000000000002',
+  variableDefinitionChallenge: '12000000-0000-4000-8000-000000000003',
+});
