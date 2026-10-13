@@ -80,9 +80,14 @@ si deja una lección general, agregarla acá con su origen `_(DEV-XX #n)_`.
 
 - No agregar comentarios (`//` ni `/** */`) en código nuevo o modificado. Los nombres de funciones
   y variables, y el mensaje de un `throw` o `logger.error`, explican el porqué.
+<<<<<<< HEAD
 - El código JS del repo no tiene comentarios ni JSDoc. Los comentarios del `schema.prisma`, de
   los SQL y de los YAML de infraestructura sí se mantienen: documentan el modelo de datos y la
   infraestructura, no código.
+=======
+- Los comentarios y el JSDoc que ya existen no se tocan en un PR de feature (agranda el diff). Se
+  quitan en un PR propio de limpieza.
+>>>>>>> 91d40d8 (Development (#1))
 - Antes de cerrar un cambio: `git diff -- <archivos> | grep -E '^\+\s*(//|/\*|\*)'` y sacar lo que
   se haya agregado.
 

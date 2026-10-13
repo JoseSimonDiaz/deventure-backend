@@ -1,6 +1,7 @@
 import { ZodError } from 'zod';
 import { AppError } from '../errors.js';
 import { logger } from '../logger.js';
+<<<<<<< HEAD
 
 const PRISMA_KNOWN_ERRORS = new Map([
   ['P2002', { status: 409, code: 'CONFLICT', message: 'El recurso ya existe' }],
@@ -22,6 +23,33 @@ const BODY_PARSER_ERRORS = new Map([
   ],
 ]);
 
+=======
+
+const PRISMA_KNOWN_ERRORS = new Map([
+  ['P2002', { status: 409, code: 'CONFLICT', message: 'El recurso ya existe' }],
+  ['P2025', { status: 404, code: 'NOT_FOUND', message: 'Recurso no encontrado' }],
+]);
+
+const BODY_PARSER_ERRORS = new Map([
+  [
+    'entity.parse.failed',
+    { status: 400, code: 'INVALID_JSON', message: 'El cuerpo del pedido no es un JSON válido' },
+  ],
+  [
+    'entity.too.large',
+    {
+      status: 413,
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'El cuerpo del pedido es demasiado grande',
+    },
+  ],
+]);
+
+/**
+ * @param {import('express').Response} res
+ * @param {{ status: number, code: string, message: string, details?: unknown }} errorResponse
+ */
+>>>>>>> 91d40d8 (Development (#1))
 function sendError(res, { status, code, message, details }) {
   res.status(status).json({ error: { code, message, details } });
 }
@@ -37,6 +65,13 @@ export function notFoundHandler(req, res) {
 const isPrismaKnownError = (error) =>
   error?.name === 'PrismaClientKnownRequestError' && PRISMA_KNOWN_ERRORS.has(error.code);
 
+<<<<<<< HEAD
+=======
+/**
+ * Último middleware de la app. Traduce cualquier error al formato
+ * `{ "error": { "code", "message", "details" } }`. Nunca expone el stack trace.
+ */
+>>>>>>> 91d40d8 (Development (#1))
 export function errorHandler(error, req, res, _next) {
   if (error instanceof AppError) {
     return sendError(res, error);
