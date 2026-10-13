@@ -19,7 +19,11 @@ alguien las recuerde en cada review.
 | Forma de las respuestas | La arma la consulta (`select`, `$queryRaw`). Sin mappers en JS                                                                                     |
 | Nombres                 | Descriptivos; prohibidos los de una letra                                                                                                          |
 | Logs                    | Logger de `service-kit` (pino). Prohibido `console`                                                                                                |
+<<<<<<< HEAD
 | Comentarios y JSDoc     | No se usan en el código JS. Sí en `schema.prisma`, SQL y YAML de infraestructura                                                                   |
+=======
+| Comentarios y JSDoc     | No se agregan en código nuevo. Los existentes se quitan en un PR de limpieza aparte                                                                |
+>>>>>>> 91d40d8 (Development (#1))
 | Tests                   | No son obligatorios por ahora. Los existentes se mantienen en verde; cada ticket se prueba a mano                                                  |
 | Cumplimiento            | Las reglas verificables están en `packages/eslint-config` (`no-restricted-syntax`, `id-length`, `no-console`) y frenan el `pre-commit` y el CI     |
 
