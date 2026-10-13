@@ -6,3 +6,8 @@ dist/
 coverage/
 .DS_Store
 *.log
+
+# Claude Code (config personal y artefactos)
+.claude/settings.local.json
+.claude/.playwright-mcp/
+graphify-out/

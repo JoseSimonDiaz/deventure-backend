@@ -3,3 +3,8 @@ coverage
 dist
 package-lock.json
 **/prisma/migrations
+
+# Skills/agents/commands de terceros (agent-skills), se mantienen como vienen
+.claude/skills
+.claude/agents
+.claude/commands
