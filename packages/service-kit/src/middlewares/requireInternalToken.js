@@ -12,10 +12,6 @@ function safeEqual(receivedToken, expectedToken) {
   );
 }
 
-/**
- * Protege las rutas /internal/*: el header `x-internal-token` tiene que ser igual a
- * `process.env.INTERNAL_TOKEN`. Si falta, no coincide o el servicio no tiene token configurado → 403.
- */
 export function requireInternalToken(req, _res, next) {
   const expected = process.env.INTERNAL_TOKEN;
   const received = req.get(INTERNAL_TOKEN_HEADER);

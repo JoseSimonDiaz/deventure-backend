@@ -21,10 +21,9 @@ Reglas de trabajo:
 - **No hagas commits, push, ramas remotas ni Pull Requests** si no te lo pido explícitamente.
   No toques GitHub ni Trello.
 - Si una regla funcional es ambigua o falta un dato, **preguntá**; no inventes.
-- Las cards de Trello (y este documento) mencionan rutas de la estructura vieja (`apps/web`,
-  `services/*`, `packages/service-kit`, `packages/contracts`) y ejemplos con `map`, `filter`,
-  `some`, `for`, JSDoc o tests. **No los copies**: adaptalos a la estructura y reglas actuales
-  (sección 16).
+- Las cards de Trello tienen ejemplos con `map`, `filter`, `some`, `for`, JSDoc, mappers o tests.
+  **No los copies**: adaptalos a las reglas actuales (sección 16 y
+  `.claude/rules/code-review-rules.md`).
 - Al terminar cada ticket: `npm run lint` con 0 errores, `npm run format:check` OK, criterios de
   aceptación cumplidos y probado a mano (curl, REST Client o navegador). Mostrame cómo lo probaste.
 
@@ -95,47 +94,47 @@ administrativos externos.
 
 ## 4. Actores y permisos
 
-| Actor | Descripción | Puede |
-|---|---|---|
-| Visitante | Persona sin sesión iniciada | Ver la pantalla de inicio, registrarse, iniciar sesión |
-| Jugador (`player`) | Usuario registrado | Ver la intro, jugar niveles desbloqueados, pedir pistas, usar el asistente, ver su progreso y galería, cambiar ajustes, editar o borrar su cuenta |
-| Administrador (`admin`) | Responsable del contenido | Todo lo del jugador + administrar zonas, niveles, desafíos y pistas, publicar/archivar, previsualizar desafíos, ver estadísticas y llamadas internas fallidas |
-| Sistema de almacenamiento | PostgreSQL (una base por microservicio) | Guarda cuentas, contenido, sesiones, progreso y recompensas |
+| Actor                     | Descripción                             | Puede                                                                                                                                                         |
+| ------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Visitante                 | Persona sin sesión iniciada             | Ver la pantalla de inicio, registrarse, iniciar sesión                                                                                                        |
+| Jugador (`player`)        | Usuario registrado                      | Ver la intro, jugar niveles desbloqueados, pedir pistas, usar el asistente, ver su progreso y galería, cambiar ajustes, editar o borrar su cuenta             |
+| Administrador (`admin`)   | Responsable del contenido               | Todo lo del jugador + administrar zonas, niveles, desafíos y pistas, publicar/archivar, previsualizar desafíos, ver estadísticas y llamadas internas fallidas |
+| Sistema de almacenamiento | PostgreSQL (una base por microservicio) | Guarda cuentas, contenido, sesiones, progreso y recompensas                                                                                                   |
 
 ## 5. Requerimientos funcionales
 
-| Id | Requerimiento | Tickets |
-|---|---|---|
-| RF01 | Mostrar una introducción sobre qué es Deventure, qué se aprende y cómo se juega | DEV-11 |
-| RF02 | Mostrar los niveles disponibles en un mapa de zonas | DEV-12, DEV-14 |
-| RF03 | Desbloquear niveles y zonas al cumplir las condiciones para avanzar | DEV-13 |
-| RF04 | Presentar desafíos sobre conceptos de programación | DEV-02, DEV-15, contenido DEV-26..29 |
-| RF05 | Permitir resolver los desafíos (5 tipos de minijuego) | DEV-16, DEV-17, DEV-18, DEV-22 |
-| RF06 | Comprobar la respuesta e indicar si es correcta o incorrecta, con explicación | DEV-16..19, DEV-22 |
-| RF07 | Dar ayuda: pistas, teoría de la zona y asistente IA | DEV-23, DEV-25, DEV-24 |
-| RF08 | Registrar el progreso del jugador | DEV-07, DEV-44 |
-| RF09 | Mostrar el progreso (niveles, desafíos, estrellas, racha) | DEV-08 |
-| RF10 | Administrar contenidos y desafíos | DEV-33 |
-| RF11 | Registrar jugadores e iniciar sesión | DEV-06 |
-| RF12 | Ajustar el volumen de la música (o silenciarla) y el brillo | DEV-04, DEV-05 |
-| RF13 | Desbloquear recompensas y mostrarlas en una galería | DEV-31, DEV-32 |
-| RF14 | Mostrar mensajes de ánimo al equivocarse o perder | DEV-20 |
-| RF15 | Mostrar el resultado de cada nivel ganado | DEV-21 |
-| RF16 | Gestionar la cuenta (editar username y contraseña, borrar cuenta) | DEV-09 |
-| RF17 | Mostrar una pantalla final al completar el juego | DEV-30 |
-| RF18 | Mostrar estadísticas de uso al administrador | DEV-34 |
+| Id   | Requerimiento                                                                   | Tickets                              |
+| ---- | ------------------------------------------------------------------------------- | ------------------------------------ |
+| RF01 | Mostrar una introducción sobre qué es Deventure, qué se aprende y cómo se juega | DEV-11                               |
+| RF02 | Mostrar los niveles disponibles en un mapa de zonas                             | DEV-12, DEV-14                       |
+| RF03 | Desbloquear niveles y zonas al cumplir las condiciones para avanzar             | DEV-13                               |
+| RF04 | Presentar desafíos sobre conceptos de programación                              | DEV-02, DEV-15, contenido DEV-26..29 |
+| RF05 | Permitir resolver los desafíos (5 tipos de minijuego)                           | DEV-16, DEV-17, DEV-18, DEV-22       |
+| RF06 | Comprobar la respuesta e indicar si es correcta o incorrecta, con explicación   | DEV-16..19, DEV-22                   |
+| RF07 | Dar ayuda: pistas, teoría de la zona y asistente IA                             | DEV-23, DEV-25, DEV-24               |
+| RF08 | Registrar el progreso del jugador                                               | DEV-07, DEV-44                       |
+| RF09 | Mostrar el progreso (niveles, desafíos, estrellas, racha)                       | DEV-08                               |
+| RF10 | Administrar contenidos y desafíos                                               | DEV-33                               |
+| RF11 | Registrar jugadores e iniciar sesión                                            | DEV-06                               |
+| RF12 | Ajustar el volumen de la música (o silenciarla) y el brillo                     | DEV-04, DEV-05                       |
+| RF13 | Desbloquear recompensas y mostrarlas en una galería                             | DEV-31, DEV-32                       |
+| RF14 | Mostrar mensajes de ánimo al equivocarse o perder                               | DEV-20                               |
+| RF15 | Mostrar el resultado de cada nivel ganado                                       | DEV-21                               |
+| RF16 | Gestionar la cuenta (editar username y contraseña, borrar cuenta)               | DEV-09                               |
+| RF17 | Mostrar una pantalla final al completar el juego                                | DEV-30                               |
+| RF18 | Mostrar estadísticas de uso al administrador                                    | DEV-34                               |
 
 ## 6. Requerimientos no funcionales
 
-| Id | Requerimiento | Cómo se mide |
-|---|---|---|
-| RNF01 | Usabilidad: interfaz simple para alguien sin conocimientos de programación | Navegable con teclado y con foco visible; responsive en 360, 768 y 1440 px sin scroll horizontal |
-| RNF02 | Facilidad de aprendizaje: instrucciones claras | Enunciados cortos, segunda persona ("vos"), un concepto por desafío |
-| RNF03 | Rendimiento | Lighthouse Performance ≥ 85 en `/map`; p95 < 300 ms en los endpoints de lectura con 50 usuarios |
-| RNF04 | Seguridad: el progreso no se puede modificar sin autorización | Reglas anti-trampa de la sección 9.10; contraseñas con bcrypt; JWT; rutas internas protegidas |
-| RNF05 | Compatibilidad | Últimas versiones de Chrome, Firefox y Edge, escritorio y celular |
-| RNF06 | Mantenibilidad: agregar niveles y desafíos sin rehacer el sistema | El contenido vive en la base y se carga por seed o panel admin; microservicios; reglas de `CLAUDE.md` |
-| RNF07 | Accesibilidad del contenido: lenguaje sencillo | Lighthouse Accessibility ≥ 90; 0 violaciones graves de axe; respetar "reducir movimiento" |
+| Id    | Requerimiento                                                              | Cómo se mide                                                                                          |
+| ----- | -------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| RNF01 | Usabilidad: interfaz simple para alguien sin conocimientos de programación | Navegable con teclado y con foco visible; responsive en 360, 768 y 1440 px sin scroll horizontal      |
+| RNF02 | Facilidad de aprendizaje: instrucciones claras                             | Enunciados cortos, segunda persona ("vos"), un concepto por desafío                                   |
+| RNF03 | Rendimiento                                                                | Lighthouse Performance ≥ 85 en `/map`; p95 < 300 ms en los endpoints de lectura con 50 usuarios       |
+| RNF04 | Seguridad: el progreso no se puede modificar sin autorización              | Reglas anti-trampa de la sección 9.10; contraseñas con bcrypt; JWT; rutas internas protegidas         |
+| RNF05 | Compatibilidad                                                             | Últimas versiones de Chrome, Firefox y Edge, escritorio y celular                                     |
+| RNF06 | Mantenibilidad: agregar niveles y desafíos sin rehacer el sistema          | El contenido vive en la base y se carga por seed o panel admin; microservicios; reglas de `CLAUDE.md` |
+| RNF07 | Accesibilidad del contenido: lenguaje sencillo                             | Lighthouse Accessibility ≥ 90; 0 violaciones graves de axe; respetar "reducir movimiento"             |
 
 ## 7. Recorrido del jugador
 
@@ -163,12 +162,12 @@ Pantallas de admin: `/admin` (zonas, niveles y desafíos) y `/admin/stats`.
 
 ## 8. Contenido educativo
 
-| Orden | Zona (slug) | Lenguaje | Niveles |
-|---|---|---|---|
-| 1 | Lógica básica (`logica-basica`) | Pseudocódigo en español | 1 ¿Qué es un programa? · 2 Variables · 3 Tipos de datos · 4 Operadores · 5 Condicionales |
-| 2 | C# básico (`csharp-basico`) | C# | 1 Tu primer programa · 2 Tipos y variables · 3 Operadores · 4 Decisiones (`if`, `switch`) · 5 Bucles · 6 Métodos |
-| 3 | POO en C# (`poo-csharp`) | C# | 1 Clases y objetos · 2 Propiedades y métodos · 3 Constructores · 4 Encapsulamiento · 5 Herencia · 6 Polimorfismo e interfaces |
-| 4 | SQL (`sql`) | SQL | 1 Tablas, filas y columnas · 2 SELECT y FROM · 3 WHERE · 4 ORDER BY y LIMIT · 5 Agrupar (COUNT, SUM, GROUP BY, HAVING) · 6 JOIN · 7 INSERT, UPDATE, DELETE · 8 (opcional) Normalización 1FN-3FN |
+| Orden | Zona (slug)                     | Lenguaje                | Niveles                                                                                                                                                                                         |
+| ----- | ------------------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1     | Lógica básica (`logica-basica`) | Pseudocódigo en español | 1 ¿Qué es un programa? · 2 Variables · 3 Tipos de datos · 4 Operadores · 5 Condicionales                                                                                                        |
+| 2     | C# básico (`csharp-basico`)     | C#                      | 1 Tu primer programa · 2 Tipos y variables · 3 Operadores · 4 Decisiones (`if`, `switch`) · 5 Bucles · 6 Métodos                                                                                |
+| 3     | POO en C# (`poo-csharp`)        | C#                      | 1 Clases y objetos · 2 Propiedades y métodos · 3 Constructores · 4 Encapsulamiento · 5 Herencia · 6 Polimorfismo e interfaces                                                                   |
+| 4     | SQL (`sql`)                     | SQL                     | 1 Tablas, filas y columnas · 2 SELECT y FROM · 3 WHERE · 4 ORDER BY y LIMIT · 5 Agrupar (COUNT, SUM, GROUP BY, HAVING) · 6 JOIN · 7 INSERT, UPDATE, DELETE · 8 (opcional) Normalización 1FN-3FN |
 
 Reglas del contenido:
 
@@ -241,13 +240,13 @@ Reglas del contenido:
 
 El código del jugador **nunca se compila ni se ejecuta**: se valida comparando con reglas.
 
-| Tipo | El jugador... | Es correcta si... |
-|---|---|---|
-| `multiple_choice` | elige una opción (las opciones se mezclan) | eligió la opción correcta |
-| `order_blocks` | ordena bloques de código (drag & drop, también con teclado y touch) | el orden coincide con alguno de los órdenes válidos; si no, se marca la primera línea mal |
-| `fill_code` | completa huecos o escribe código libre (editor con resaltado) | modo huecos: cada hueco está entre sus respuestas válidas; modo libre: igual a una respuesta aceptada o contiene los tokens requeridos en orden, después de normalizar |
-| `find_bug` | elige la línea con el error y la corrección | línea y corrección correctas ("encontraste la línea, pero esa no es la corrección") |
-| `predict_output` | escribe qué imprime el código | la salida coincide línea por línea (ignorando espacios al final y líneas vacías finales) |
+| Tipo              | El jugador...                                                       | Es correcta si...                                                                                                                                                      |
+| ----------------- | ------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `multiple_choice` | elige una opción (las opciones se mezclan)                          | eligió la opción correcta                                                                                                                                              |
+| `order_blocks`    | ordena bloques de código (drag & drop, también con teclado y touch) | el orden coincide con alguno de los órdenes válidos; si no, se marca la primera línea mal                                                                              |
+| `fill_code`       | completa huecos o escribe código libre (editor con resaltado)       | modo huecos: cada hueco está entre sus respuestas válidas; modo libre: igual a una respuesta aceptada o contiene los tokens requeridos en orden, después de normalizar |
+| `find_bug`        | elige la línea con el error y la corrección                         | línea y corrección correctas ("encontraste la línea, pero esa no es la corrección")                                                                                    |
+| `predict_output`  | escribe qué imprime el código                                       | la salida coincide línea por línea (ignorando espacios al final y líneas vacías finales)                                                                               |
 
 - RN-24 · Normalización de código antes de comparar: quitar espacios sobrantes, espacios antes de
   `;` y `)`, palabras clave de SQL en mayúsculas, `;` final opcional en SQL.
@@ -363,21 +362,21 @@ El código del jugador **nunca se compila ni se ejecuta**: se valida comparando 
 Microservicios Express que se comunican **solo por REST** (sin colas ni eventos). PostgreSQL con
 **una base por servicio** y Prisma 6.19.3. Frontend React + Tailwind. JavaScript (ESM), Node 22.
 
-| Servicio | Puerto | Base | Responsabilidad |
-|---|---|---|---|
-| api-gateway | 3000 | — | Única entrada pública `/api/*`: JWT, roles, CORS, rate limit, bloqueo de `/internal`, proxy |
-| auth-service | 3001 | auth_db | Cuentas, credenciales, roles, ajustes, avatar, bloqueo de login |
-| content-service | 3002 | content_db | Zonas, niveles, desafíos (con solución), pistas, teoría, auditoría de admin |
-| gameplay-service | 3003 | gameplay_db | Sesiones de juego, intentos, validadores, vidas, estrellas, pistas usadas, reintentos internos |
-| progress-service | 3004 | progress_db | Progreso por nivel, desbloqueos, teoría vista, resúmenes, racha |
-| rewards-service | 3005 | rewards_db | Catálogo de recompensas, reglas, recompensas obtenidas |
-| assistant-service | 3006 | assistant_db | Asistente IA (opcional, prioridad media) |
-| frontend | 5173 | — | React + Tailwind |
+| Servicio          | Puerto | Base         | Responsabilidad                                                                                |
+| ----------------- | ------ | ------------ | ---------------------------------------------------------------------------------------------- |
+| api-gateway       | 3000   | —            | Única entrada pública `/api/*`: JWT, roles, CORS, rate limit, bloqueo de `/internal`, proxy    |
+| auth-service      | 3001   | auth_db      | Cuentas, credenciales, roles, ajustes, avatar, bloqueo de login                                |
+| content-service   | 3002   | content_db   | Zonas, niveles, desafíos (con solución), pistas, teoría, auditoría de admin                    |
+| gameplay-service  | 3003   | gameplay_db  | Sesiones de juego, intentos, validadores, vidas, estrellas, pistas usadas, reintentos internos |
+| progress-service  | 3004   | progress_db  | Progreso por nivel, desbloqueos, teoría vista, resúmenes, racha                                |
+| rewards-service   | 3005   | rewards_db   | Catálogo de recompensas, reglas, recompensas obtenidas                                         |
+| assistant-service | 3006   | assistant_db | Asistente IA (opcional, prioridad media)                                                       |
+| frontend          | 5173   | —            | React + Tailwind                                                                               |
 
 Flujos internos clave:
 
 - **Nivel ganado:** gameplay cierra la sesión (`won`), llama a `POST progress
-  /internal/level-completions`, después a `POST rewards /internal/evaluations` y responde al
+/internal/level-completions`, después a `POST rewards /internal/evaluations` y responde al
   jugador con resultado, desbloqueos y recompensas. Los dos endpoints son **idempotentes por
   `sessionId`**. Si uno falla, la llamada se guarda en `pending_internal_calls` y un job la
   reintenta cada 30 s con espera creciente; a los 10 fallos queda `failed` y la ve el admin.
@@ -414,15 +413,15 @@ las referencias entre servicios sobrevivan a un reset.
 
 ## 12. API pública (por el gateway, prefijo `/api`)
 
-| Servicio | Endpoints |
-|---|---|
-| auth | `POST /auth/register` · `POST /auth/login` · `GET /auth/me` · `PATCH /auth/me/intro-seen` · `GET` y `PATCH /auth/me/settings` · `PATCH /auth/me` (username) · `PATCH /auth/me/password` · `PATCH /auth/me/avatar` · `DELETE /auth/me` |
-| content | `GET /content/zones` · `GET /content/levels/:levelId` (sin solución) · `GET /content/zones/:zoneId/theory` |
-| gameplay | `POST /gameplay/sessions` · `GET /gameplay/sessions/:id` · `POST /gameplay/sessions/:id/abandon` · `POST /gameplay/sessions/:id/attempts` · `POST /gameplay/sessions/:id/hints` |
-| progress | `GET /progress/me` · `GET /progress/me/summary` · `GET` y `POST /progress/me/theory-seen` |
-| rewards | `GET /rewards/me?type=&status=` · `PATCH /rewards/me/:rewardId/seen` |
-| assistant | `POST /assistant/hints` |
-| admin | `/admin/content/*` (CRUD, orden, publicar, `preview-validate`) · `/admin/stats` · `/admin/gameplay/pending-calls` |
+| Servicio  | Endpoints                                                                                                                                                                                                                             |
+| --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| auth      | `POST /auth/register` · `POST /auth/login` · `GET /auth/me` · `PATCH /auth/me/intro-seen` · `GET` y `PATCH /auth/me/settings` · `PATCH /auth/me` (username) · `PATCH /auth/me/password` · `PATCH /auth/me/avatar` · `DELETE /auth/me` |
+| content   | `GET /content/zones` · `GET /content/levels/:levelId` (sin solución) · `GET /content/zones/:zoneId/theory`                                                                                                                            |
+| gameplay  | `POST /gameplay/sessions` · `GET /gameplay/sessions/:id` · `PATCH /gameplay/sessions/:id` (`{ status: 'abandoned' }`) · `POST /gameplay/sessions/:id/attempts` · `POST /gameplay/sessions/:id/hints`                                  |
+| progress  | `GET /progress/me` · `GET /progress/me/summary` · `GET` y `POST /progress/me/theory-seen`                                                                                                                                             |
+| rewards   | `GET /rewards/me?type=&status=` · `PATCH /rewards/me/:rewardId/seen`                                                                                                                                                                  |
+| assistant | `POST /assistant/hints`                                                                                                                                                                                                               |
+| admin     | `/admin/content/*` (CRUD, orden, publicar, `preview-validate`) · `/admin/stats` · `/admin/gameplay/pending-calls`                                                                                                                     |
 
 Formato: éxito `{ "data": ... }`, error `{ "error": { "code", "message", "details" } }`. Códigos
 usados: 400, 401, 403, 404, 409, 413, 423, 429, 500 y 503.
@@ -451,66 +450,68 @@ usados: 400, 401, 403, 404, 409, 413, 423, 429, 500 y 503.
 Las cards de Trello tienen el detalle técnico de cada ticket (endpoints, formatos, criterios de
 aceptación). Adaptá sus rutas y ejemplos según la sección 16.
 
-| P | Ticket | Qué | Estado esperado del repo |
-|---|---|---|---|
-| P01 | DEV-01 | Monorepo, ESLint, Prettier, Husky, commitlint | Backend hecho; falta `frontend/` (Vite + React + Tailwind con colores `viking-*`) |
-| P02 | DEV-42 | Docker Compose con Postgres y servicios | Hecho para postgres, auth y gateway; sumar cada servicio y el frontend al crearlos |
-| P03 | DEV-39 | Código compartido de los servicios | Hecho como `backend/shared` |
-| P04 | DEV-40 | Esquemas Zod compartidos | Hoy viven en cada módulo; **decidir conmigo** dónde van los que comparta el frontend |
-| P05 | DEV-43 | CI | Hecho (lint, formato, `prisma validate`) |
-| P06 | DEV-38 | API Gateway | Hecho para auth; sumar un proxy por servicio y las rutas `/api/admin/*` |
-| P07 | DEV-06 | Registro e inicio de sesión | Backend hecho; faltan las pantallas React y el contexto de sesión |
-| P08 | DEV-02 | content-service: zonas, niveles, desafíos, pistas | Pendiente |
-| P09 | DEV-03 | Pantalla de inicio (Jugar, Ajustes, Salir) | Pendiente |
-| P10 | DEV-11 | Introducción con Björn | Pendiente |
-| P11 | DEV-12 | Mapa de zonas y niveles | Pendiente |
-| P12 | DEV-15 | Pantalla de nivel + sesiones de juego | Pendiente |
-| P13 | DEV-16 | Opción múltiple + endpoint de intentos | Pendiente |
-| P14 | DEV-19 | 3 vidas, nivel perdido, estrellas | Pendiente |
-| P15 | DEV-41 | Cliente REST interno + token interno | Pendiente |
-| P16 | DEV-07 | progress-service: guardar progreso | Pendiente |
-| P17 | DEV-13 | Desbloqueo de nivel y zona | Pendiente |
-| P18 | DEV-17 | Ordenar bloques de código | Pendiente |
-| P19 | DEV-18 | Completar / escribir código | Pendiente |
-| P20 | DEV-20 | Mensajes de ánimo | Pendiente |
-| P21 | DEV-21 | Pantalla de nivel ganado | Pendiente |
-| P22 | DEV-23 | Pistas progresivas | Pendiente |
-| P23 | DEV-25 | Teoría de la zona | Pendiente |
-| P24 | DEV-26 | Contenido "Lógica básica" (cierra el MVP) | Pendiente |
-| P25 | DEV-10 | Anti-trampas | Pendiente |
-| P26 | DEV-08 | Mi progreso | Pendiente |
-| P27 | DEV-31 | rewards-service | Pendiente |
-| P28 | DEV-32 | Galería | Pendiente |
-| P29 | DEV-27 | Contenido "C# básico" | Pendiente |
-| P30 | DEV-28 | Contenido "POO en C#" | Pendiente |
-| P31 | DEV-29 | Contenido "SQL" | Pendiente |
-| P32 | DEV-33 | Panel de administración de contenido | Pendiente |
-| P33 | DEV-44 | Reintento de llamadas internas | Pendiente |
-| P34 | DEV-22 | "Encontrá el bug" y "¿Qué imprime?" | Pendiente |
-| P35 | DEV-14 | Arte vikingo y animaciones del mapa | Pendiente |
-| P36 | DEV-24 | Asistente IA | Pendiente |
-| P37 | DEV-35 | Usabilidad y accesibilidad | Pendiente |
-| P38 | DEV-36 | Rendimiento | Pendiente |
-| P39 | DEV-37 | Deploy y documentación final | Pendiente |
-| P40 | DEV-04 | Volumen de música (efectos: a confirmar, ver RN-09) | Pendiente |
-| P41 | DEV-05 | Brillo | Pendiente |
-| P42 | DEV-09 | Gestionar cuenta | Pendiente |
-| P43 | DEV-30 | Pantalla final | Pendiente |
-| P44 | DEV-34 | Estadísticas para admin | Pendiente |
-| P45 | DEV-46 | Tests de contrato entre servicios | Pendiente (el equipo decidió no hacer tests por ahora; confirmar antes) |
-| P46 | DEV-45 | Observabilidad (OpenTelemetry) | Pendiente |
+| P   | Ticket | Qué                                                 | Estado esperado del repo                                                                                           |
+| --- | ------ | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| P01 | DEV-01 | Monorepo, ESLint, Prettier, Husky, commitlint       | Backend hecho (con reglas de ADR-002 en ESLint); falta `apps/web` (Vite + React + Tailwind con colores `viking-*`) |
+| P02 | DEV-42 | Docker Compose con Postgres y servicios             | Hecho para postgres, gateway y los 5 servicios; sumar el frontend al crearlo                                       |
+| P03 | DEV-39 | Código compartido de los servicios                  | Hecho como `packages/service-kit`                                                                                  |
+| P04 | DEV-40 | Esquemas Zod compartidos                            | Hecho como `packages/contracts` (auth); cada servicio suma los suyos                                               |
+| P05 | DEV-43 | CI                                                  | Hecho (lint, formato, `prisma validate`, tests de los workspaces que cambian)                                      |
+| P06 | DEV-38 | API Gateway                                         | Hecho: proxies a los 5 servicios y rutas `/api/admin/*`                                                            |
+| P07 | DEV-06 | Registro e inicio de sesión                         | Backend hecho; faltan las pantallas React y el contexto de sesión                                                  |
+| P08 | DEV-02 | content-service: zonas, niveles, desafíos, pistas   | Pendiente                                                                                                          |
+| P09 | DEV-03 | Pantalla de inicio (Jugar, Ajustes, Salir)          | Pendiente                                                                                                          |
+| P10 | DEV-11 | Introducción con Björn                              | Pendiente                                                                                                          |
+| P11 | DEV-12 | Mapa de zonas y niveles                             | Pendiente                                                                                                          |
+| P12 | DEV-15 | Pantalla de nivel + sesiones de juego               | Pendiente                                                                                                          |
+| P13 | DEV-16 | Opción múltiple + endpoint de intentos              | Pendiente                                                                                                          |
+| P14 | DEV-19 | 3 vidas, nivel perdido, estrellas                   | Pendiente                                                                                                          |
+| P15 | DEV-41 | Cliente REST interno + token interno                | Pendiente                                                                                                          |
+| P16 | DEV-07 | progress-service: guardar progreso                  | Pendiente                                                                                                          |
+| P17 | DEV-13 | Desbloqueo de nivel y zona                          | Pendiente                                                                                                          |
+| P18 | DEV-17 | Ordenar bloques de código                           | Pendiente                                                                                                          |
+| P19 | DEV-18 | Completar / escribir código                         | Pendiente                                                                                                          |
+| P20 | DEV-20 | Mensajes de ánimo                                   | Pendiente                                                                                                          |
+| P21 | DEV-21 | Pantalla de nivel ganado                            | Pendiente                                                                                                          |
+| P22 | DEV-23 | Pistas progresivas                                  | Pendiente                                                                                                          |
+| P23 | DEV-25 | Teoría de la zona                                   | Pendiente                                                                                                          |
+| P24 | DEV-26 | Contenido "Lógica básica" (cierra el MVP)           | Pendiente                                                                                                          |
+| P25 | DEV-10 | Anti-trampas                                        | Pendiente                                                                                                          |
+| P26 | DEV-08 | Mi progreso                                         | Pendiente                                                                                                          |
+| P27 | DEV-31 | rewards-service                                     | Pendiente                                                                                                          |
+| P28 | DEV-32 | Galería                                             | Pendiente                                                                                                          |
+| P29 | DEV-27 | Contenido "C# básico"                               | Pendiente                                                                                                          |
+| P30 | DEV-28 | Contenido "POO en C#"                               | Pendiente                                                                                                          |
+| P31 | DEV-29 | Contenido "SQL"                                     | Pendiente                                                                                                          |
+| P32 | DEV-33 | Panel de administración de contenido                | Pendiente                                                                                                          |
+| P33 | DEV-44 | Reintento de llamadas internas                      | Pendiente                                                                                                          |
+| P34 | DEV-22 | "Encontrá el bug" y "¿Qué imprime?"                 | Pendiente                                                                                                          |
+| P35 | DEV-14 | Arte vikingo y animaciones del mapa                 | Pendiente                                                                                                          |
+| P36 | DEV-24 | Asistente IA                                        | Pendiente                                                                                                          |
+| P37 | DEV-35 | Usabilidad y accesibilidad                          | Pendiente                                                                                                          |
+| P38 | DEV-36 | Rendimiento                                         | Pendiente                                                                                                          |
+| P39 | DEV-37 | Deploy y documentación final                        | Pendiente                                                                                                          |
+| P40 | DEV-04 | Volumen de música (efectos: a confirmar, ver RN-09) | Pendiente                                                                                                          |
+| P41 | DEV-05 | Brillo                                              | Pendiente                                                                                                          |
+| P42 | DEV-09 | Gestionar cuenta                                    | Pendiente                                                                                                          |
+| P43 | DEV-30 | Pantalla final                                      | Pendiente                                                                                                          |
+| P44 | DEV-34 | Estadísticas para admin                             | Pendiente                                                                                                          |
+| P45 | DEV-46 | Tests de contrato entre servicios                   | Pendiente (el equipo decidió no hacer tests por ahora; confirmar antes)                                            |
+| P46 | DEV-45 | Observabilidad (OpenTelemetry)                      | Pendiente                                                                                                          |
 
 ## 16. Adaptaciones obligatorias respecto de las cards de Trello
 
-1. **Estructura:**
-   - `services/<x>` → `backend/<x>`;
-   - `packages/service-kit` → `backend/shared` (`@deventure/shared/*`);
-   - `apps/web` → `frontend/`;
-   - `infra/docker-compose.yml` → `docker-compose.yml` en la raíz;
-   - `infra/postgres/init.sql` → `docker/postgres/init.sql`.
+1. **Estructura** (la de las cards es la real):
+   - servicios en `services/<x>`, código compartido en `packages/service-kit` y
+     `packages/contracts`, frontend en `apps/web`;
+   - Docker en `infra/docker-compose.yml` e `infra/postgres/init.sql`.
 
-   Un servicio nuevo copia la estructura de `backend/auth-service` y suma su proxy en
-   `backend/api-gateway/src/proxies/`.
+   Un servicio nuevo copia la estructura de `services/auth-service`
+   (`routes → controllers → services → repositories`) y suma su proxy con
+   `registerServiceRoutes` en `services/api-gateway/src/routes/proxies.js`. También hay que
+   agregarlo a los filtros y a la lista `ALL` de `.github/workflows/ci.yml`, a
+   `infra/postgres/init.sql` (su base) y a `infra/docker-compose.yml`.
+
 2. **Sin `map`, `filter`, `some`, `every`, `find`, `reduce`, `forEach`, `sort` ni loops en el
    backend.** Las cards tienen ejemplos con esos métodos: hay que resolverlo en la base o con un
    `Map`. Por ejemplo:
@@ -526,11 +527,15 @@ aceptación). Adaptá sus rutas y ejemplos según la sección 16.
 
    El frontend (React) **sí** puede usar `map` para renderizar listas: la regla es solo del
    backend.
-3. **Sin comentarios ni JSDoc** (las cards mencionan JSDoc: ignorarlo).
-4. **Sin tests automatizados por ahora** (decisión del equipo). Las secciones "Cómo probarlo" de
-   las cards se verifican a mano. Preguntá antes de agregar Vitest o Playwright.
-5. **Versiones:** Express 5, Zod 4, Prisma 6.19.3 (con `prisma.config.js`), http-proxy-middleware
-   4, ESLint 10, Node 22.
+   `npm run lint` hace cumplir esta regla en `services/**` y `packages/**`.
+
+3. **Sin comentarios ni JSDoc** (las cards mencionan JSDoc: ignorarlo). **Sin mappers**: la forma
+   de la respuesta la arma la consulta (`select` o `$queryRaw`).
+4. **Sin tests automatizados obligatorios** (decisión del equipo). Las secciones "Cómo probarlo"
+   de las cards se verifican a mano. Preguntá antes de agregar Vitest o Playwright. Los tests que
+   ya existen (gateway, contracts, health) se mantienen en verde.
+5. **Versiones:** Express 5, Zod 3.25, Prisma 6.19.3, http-proxy-middleware 3, ESLint 9,
+   Node 22. Subir de versión (Zod 4, ESLint 10, etc.) es un ticket aparte.
 6. Operaciones que leen y escriben el mismo dato (vidas, intentos, desbloqueos, recompensas) van
    **atómicas en la base**: `UPDATE ... RETURNING`, `upsert`, transacción o `version` optimista.
 

@@ -2,18 +2,17 @@ import { NotFoundError } from '@deventure/service-kit';
 
 const INTERNAL_SEGMENT = /\/internal(\/|$)/i;
 
-/**
- * Las rutas /internal/* son solo para comunicación entre servicios: desde afuera no existen (404).
- * Se revisa la ruta cruda y la decodificada para que `%2Finternal` tampoco pase.
- */
-export function blockInternal(req, _res, next) {
-  let decoded = req.path;
+function decodePathOrKeepRaw(rawPath) {
   try {
-    decoded = decodeURIComponent(req.path);
-  } catch {
-    // ruta mal codificada: se evalúa tal cual
+    return decodeURIComponent(rawPath);
+  } catch (_malformedPathError) {
+    return rawPath;
   }
-  if (INTERNAL_SEGMENT.test(req.path) || INTERNAL_SEGMENT.test(decoded)) {
+}
+
+export function blockInternal(req, _res, next) {
+  const decodedPath = decodePathOrKeepRaw(req.path);
+  if (INTERNAL_SEGMENT.test(req.path) || INTERNAL_SEGMENT.test(decodedPath)) {
     return next(new NotFoundError(`Ruta no encontrada: ${req.method} ${req.path}`));
   }
   next();

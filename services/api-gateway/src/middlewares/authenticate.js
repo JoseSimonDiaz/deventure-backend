@@ -9,11 +9,6 @@ const isPublicRoute = (req) => {
   return PUBLIC_ROUTES.has(`${req.method} ${pathWithoutQuery}`);
 };
 
-/**
- * Verifica el JWT (`Authorization: Bearer <token>`, HS256) y deja `req.user = { id, role, username }`.
- * Sin token, token inválido o vencido → 401 UNAUTHORIZED.
- * @param {string} secret JWT_SECRET
- */
 export function authenticate(secret) {
   return (req, _res, next) => {
     if (req.method === 'OPTIONS' || isPublicRoute(req)) return next();

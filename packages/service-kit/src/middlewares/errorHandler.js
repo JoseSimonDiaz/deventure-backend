@@ -22,15 +22,10 @@ const BODY_PARSER_ERRORS = new Map([
   ],
 ]);
 
-/**
- * @param {import('express').Response} res
- * @param {{ status: number, code: string, message: string, details?: unknown }} errorResponse
- */
 function sendError(res, { status, code, message, details }) {
   res.status(status).json({ error: { code, message, details } });
 }
 
-/** Handler para rutas inexistentes (va antes del errorHandler). */
 export function notFoundHandler(req, res) {
   sendError(res, {
     status: 404,
@@ -42,10 +37,6 @@ export function notFoundHandler(req, res) {
 const isPrismaKnownError = (error) =>
   error?.name === 'PrismaClientKnownRequestError' && PRISMA_KNOWN_ERRORS.has(error.code);
 
-/**
- * Último middleware de la app. Traduce cualquier error al formato
- * `{ "error": { "code", "message", "details" } }`. Nunca expone el stack trace.
- */
 export function errorHandler(error, req, res, _next) {
   if (error instanceof AppError) {
     return sendError(res, error);

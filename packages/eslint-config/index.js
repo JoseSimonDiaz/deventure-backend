@@ -44,7 +44,10 @@ export default [
       globals: { ...globals.node },
     },
     rules: {
-      'no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      'no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' },
+      ],
       'no-console': 'error',
       eqeqeq: ['error', 'always'],
       'prefer-const': 'error',

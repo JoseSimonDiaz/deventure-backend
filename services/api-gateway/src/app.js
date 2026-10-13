@@ -6,13 +6,6 @@ import { authLimiter, globalLimiter } from './middlewares/rateLimits.js';
 import { stripIdentityHeaders } from './middlewares/stripIdentityHeaders.js';
 import { registerProxies } from './routes/proxies.js';
 
-/**
- * Única puerta de entrada al backend. Orden de los middlewares:
- * CORS → bloquear /internal → borrar headers de identidad falsos → rate limit → JWT → proxies.
- * No parsea el body (json: false): lo reenvía tal cual al servicio.
- *
- * @param {import('./config.js').GatewayConfig} config
- */
 export function buildApp(config) {
   const app = createService({ name: 'api-gateway', json: false });
 

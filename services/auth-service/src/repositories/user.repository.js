@@ -1,31 +1,50 @@
 import { prisma } from '../db.js';
 
-/** Acceso a la tabla `users`. Es la ÚNICA capa que usa Prisma directamente. */
+const PUBLIC_USER_SELECT = Object.freeze({
+  id: true,
+  username: true,
+  email: true,
+  role: true,
+  introSeen: true,
+});
+
 export const userRepository = {
-  findById(id) {
-    return prisma.user.findUnique({ where: { id } });
+  findPublicById(userId) {
+    return prisma.user.findUnique({ where: { id: userId }, select: PUBLIC_USER_SELECT });
   },
 
-  /** Devuelve qué dato ya está en uso (username sin mayúsculas o email), o null. */
-  findTaken({ usernameLower, email }) {
+  findByUsernameOrEmail({ usernameLower, email }) {
     return prisma.user.findFirst({
       where: { OR: [{ usernameLower }, { email }] },
       select: { usernameLower: true, email: true },
     });
   },
 
-  /** Busca por email (si tiene @) o por username. Incluye passwordHash para verificar. */
   findForLogin(identifier) {
-    const value = identifier.toLowerCase();
-    const where = value.includes('@') ? { email: value } : { usernameLower: value };
+    const normalizedIdentifier = identifier.toLowerCase();
+    const where = normalizedIdentifier.includes('@')
+      ? { email: normalizedIdentifier }
+      : { usernameLower: normalizedIdentifier };
     return prisma.user.findUnique({ where, omit: { passwordHash: false } });
   },
 
-  create(data) {
-    return prisma.user.create({ data });
+  createPublic(userData) {
+    return prisma.user.create({ data: userData, select: PUBLIC_USER_SELECT });
   },
 
-  update(id, data) {
-    return prisma.user.update({ where: { id }, data });
+  updatePublic(userId, userData) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: userData,
+      select: PUBLIC_USER_SELECT,
+    });
+  },
+
+  updateLoginAttempts(userId, loginAttemptsData) {
+    return prisma.user.update({
+      where: { id: userId },
+      data: loginAttemptsData,
+      select: { id: true },
+    });
   },
 };

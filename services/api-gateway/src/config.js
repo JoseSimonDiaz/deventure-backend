@@ -19,7 +19,4 @@ export const gatewayConfigSchema = z.object({
   PROXY_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),
 });
 
-/** @typedef {z.infer<typeof gatewayConfigSchema>} GatewayConfig */
-
-/** @param {Record<string, string | undefined>} [env] por defecto process.env + .env local */
 export const loadGatewayConfig = (env) => loadConfig(gatewayConfigSchema, env);

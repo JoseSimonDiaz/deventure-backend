@@ -5,7 +5,6 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./tests/setup-env.js'],
     globalSetup: ['./tests/global-setup.js'],
-    // Todos los tests comparten la misma base de test: se corren de a uno
     fileParallelism: false,
     coverage: {
       provider: 'v8',

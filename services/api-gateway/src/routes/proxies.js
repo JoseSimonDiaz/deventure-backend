@@ -1,13 +1,6 @@
 import { requireRole } from '@deventure/service-kit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
-/**
- * Crea un proxy hacia un microservicio.
- * Express ya le sacó el prefijo público (ej. `/api/auth`) a la ruta; acá se le agrega el prefijo
- * interno del servicio (ej. `/auth`). Además pone los headers de identidad y correlación.
- *
- * @param {{ name: string, target: string, prefix: string, timeoutMs: number }} options
- */
 function serviceProxy({ name, target, prefix, timeoutMs }) {
   return createProxyMiddleware({
     target,
@@ -42,18 +35,6 @@ function serviceProxy({ name, target, prefix, timeoutMs }) {
   });
 }
 
-/**
- * Tabla de ruteo (DEV-38):
- * | /api/auth/*            → auth-service     /auth/*
- * | /api/content/*         → content-service  /content/*
- * | /api/gameplay/*        → gameplay-service /gameplay/*
- * | /api/progress/*        → progress-service /progress/*
- * | /api/rewards/*         → rewards-service  /rewards/*
- * | /api/admin/<servicio>/* → <servicio>       /admin/*   (solo rol admin)
- *
- * @param {import('express').Express} app
- * @param {import('../config.js').GatewayConfig} config
- */
 export function registerProxies(app, config) {
   const timeoutMs = config.PROXY_TIMEOUT_MS;
 

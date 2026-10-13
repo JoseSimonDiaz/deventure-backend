@@ -6,7 +6,6 @@ const tooManyRequests = (_req, res) => {
   });
 };
 
-/** Límite general por IP para toda la API. */
 export const globalLimiter = (max) =>
   rateLimit({
     windowMs: 60_000,
@@ -16,7 +15,6 @@ export const globalLimiter = (max) =>
     handler: tooManyRequests,
   });
 
-/** Límite estricto para login y registro (frena ataques de fuerza bruta). */
 export const authLimiter = (max) =>
   rateLimit({
     windowMs: 60_000,

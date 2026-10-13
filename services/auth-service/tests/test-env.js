@@ -1,5 +1,3 @@
-// Variables de entorno de los tests. La base de test es SEPARADA de la de desarrollo (se borra
-// en cada corrida). Se puede cambiar con TEST_DATABASE_URL.
 export const TEST_ENV = {
   NODE_ENV: 'test',
   DATABASE_URL:

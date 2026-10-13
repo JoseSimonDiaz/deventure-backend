@@ -11,7 +11,6 @@ const USER_ID = '00000000-0000-4000-8000-000000000002';
 const tokenFor = (role = 'player', options = {}) =>
   jwt.sign({ sub: USER_ID, role, username: 'demo' }, SECRET, { algorithm: 'HS256', ...options });
 
-/** Servicio falso que devuelve lo que recibió (método, ruta, headers y body). */
 function startUpstream() {
   const upstream = express();
   upstream.use(express.json());
@@ -38,7 +37,6 @@ const makeApp = (overrides = {}) =>
       CONTENT_URL: upstreamUrl,
       GAMEPLAY_URL: upstreamUrl,
       PROGRESS_URL: upstreamUrl,
-      // Puerto cerrado para simular un servicio caído
       REWARDS_URL: 'http://127.0.0.1:1',
       RATE_LIMIT_AUTH_MAX: '1000',
       RATE_LIMIT_GLOBAL_MAX: '1000',
