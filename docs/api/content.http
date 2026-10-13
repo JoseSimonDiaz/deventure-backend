@@ -1,0 +1,61 @@
+### Probar con la extensión "REST Client" de VS Code (botón "Send Request" sobre cada pedido).
+### Requiere el gateway (3000), auth-service (3001) y content-service (3002) corriendo, con el seed cargado.
+@gateway = http://localhost:3000
+@content = http://localhost:3002
+@internalToken = cambiar-por-otro-secreto-interno
+@whatIsAProgramLevel = 11000000-0000-4000-8000-000000000001
+@variablesLevel = 11000000-0000-4000-8000-000000000002
+@logicZone = 10000000-0000-4000-8000-000000000001
+@programDefinitionChallenge = 12000000-0000-4000-8000-000000000001
+
+### Login para obtener el token (usuario del seed de auth)
+# @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{
+  "identifier": "demo",
+  "password": "Demo1234"
+}
+
+### Zonas publicadas con sus niveles, en orden → 200
+GET {{gateway}}/api/content/zones
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Nivel con sus desafíos SIN solución ni explicación → 200
+GET {{gateway}}/api/content/levels/{{whatIsAProgramLevel}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Teoría de la zona → 200
+GET {{gateway}}/api/content/zones/{{logicZone}}/theory
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Nivel inexistente → 404 LEVEL_NOT_FOUND
+GET {{gateway}}/api/content/levels/11000000-0000-4000-8000-000000000999
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Id inválido → 400 VALIDATION_ERROR
+GET {{gateway}}/api/content/levels/no-es-un-uuid
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Sin token → 401
+GET {{gateway}}/api/content/zones
+
+### /internal desde afuera (por el gateway) → 404
+GET {{gateway}}/api/content/internal/challenges/{{programDefinitionChallenge}}
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Resumen interno del nivel (directo al servicio, como lo llamaría gameplay) → 200
+GET {{content}}/internal/levels/{{whatIsAProgramLevel}}/summary
+x-internal-token: {{internalToken}}
+
+### Resumen del último nivel de la zona → nextLevel null
+GET {{content}}/internal/levels/{{variablesLevel}}/summary
+x-internal-token: {{internalToken}}
+
+### Desafío CON solución (solo interno) → 200
+GET {{content}}/internal/challenges/{{programDefinitionChallenge}}
+x-internal-token: {{internalToken}}
+
+### Interno sin token → 403 FORBIDDEN_INTERNAL
+GET {{content}}/internal/challenges/{{programDefinitionChallenge}}

@@ -1,0 +1,109 @@
+// content-service · base content_db (puerto 3002) · Prisma 6.19.3
+// Dueño del contenido educativo: zonas, niveles, desafíos (con su solución privada) y pistas.
+// La solución de un desafío solo sale por GET /internal/challenges/:challengeId (RN-50).
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma-client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ChallengeType {
+  multiple_choice
+  order_blocks
+  fill_code
+  find_bug
+  predict_output
+
+  @@map("challenge_type")
+}
+
+enum ChallengeLanguage {
+  pseudo
+  csharp
+  sql
+
+  @@map("challenge_language")
+}
+
+model Zone {
+  id            String    @id @default(uuid()) @db.Uuid
+  slug          String    @unique @db.VarChar(50)
+  name          String    @db.VarChar(80)
+  description   String
+  order         Int       @unique
+  // Video corto de la teoría (RN-30). Si falta o falla, el front muestra solo el resumen.
+  videoUrl      String?   @map("video_url") @db.VarChar(500)
+  theorySummary String    @map("theory_summary")
+  isPublished   Boolean   @default(false) @map("is_published")
+  // Las zonas no se borran: se archivan (RN-54)
+  archivedAt    DateTime? @map("archived_at")
+
+  levels Level[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("zones")
+}
+
+model Level {
+  id           String  @id @default(uuid()) @db.Uuid
+  zoneId       String  @map("zone_id") @db.Uuid
+  order        Int
+  title        String  @db.VarChar(120)
+  initialLives Int     @default(3) @map("initial_lives")
+  isPublished  Boolean @default(false) @map("is_published")
+
+  zone       Zone        @relation(fields: [zoneId], references: [id])
+  challenges Challenge[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([zoneId, order])
+  @@map("levels")
+}
+
+model Challenge {
+  id           String            @id @default(uuid()) @db.Uuid
+  levelId      String            @map("level_id") @db.Uuid
+  order        Int
+  type         ChallengeType
+  language     ChallengeLanguage
+  statement    String
+  // Lo que ve el jugador (opciones, bloques, código con huecos). Forma por tipo en @deventure/contracts
+  payload      Json
+  // Respuesta correcta. PRIVADA: nunca sale por las rutas públicas
+  solution     Json
+  explanation  String
+  // [{ pattern, message }] para mostrar el primer error común que coincida (RN-26)
+  commonErrors Json              @default("[]") @map("common_errors")
+
+  level Level  @relation(fields: [levelId], references: [id], onDelete: Cascade)
+  hints Hint[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@unique([levelId, order])
+  @@map("challenges")
+}
+
+model Hint {
+  id          String @id @default(uuid()) @db.Uuid
+  challengeId String @map("challenge_id") @db.Uuid
+  // 1 orienta, 2 es más concreta, 3 casi da la respuesta (RN-29)
+  order       Int
+  text        String
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+
+  @@unique([challengeId, order])
+  @@map("hints")
+}
