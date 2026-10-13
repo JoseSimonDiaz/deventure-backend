@@ -3,14 +3,21 @@
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 Deventure: juego web educativo de programación (tesis, equipo de 4). Monorepo npm workspaces con
-microservicios Express 5 en JavaScript ESM (Node 22, **sin TypeScript**: tipos con JSDoc + Zod).
-Las decisiones de stack están en `docs/adr/ADR-001-stack-y-arquitectura.md` — leerlo antes de
-proponer cambios de arquitectura. El código, los comentarios, los mensajes de error y los
-commits van en **español**.
+microservicios Express 5 en JavaScript ESM (Node 22, **sin TypeScript**: los contratos de datos
+son los esquemas Zod de `packages/contracts`). Las decisiones de stack están en
+`docs/adr/ADR-001-stack-y-arquitectura.md` y las reglas de código en `ADR-002`: leerlos antes de
+proponer cambios de arquitectura. El código, los mensajes de error y los commits van en
+**español**. `docs/analisis-funcional.md` describe QUÉ construir (reglas de negocio y backlog).
 
-## Reglas aprendidas de code review
+## Reglas de código (obligatorias)
 
 @.claude/rules/code-review-rules.md
+
+Lo más importante, que `npm run lint` hace cumplir en `services/**` y `packages/**`: **sin loops ni
+`map`/`filter`/`some`/`find`/`reduce`/`forEach`/`sort`** (resolverlo en la base o con `Map`/`Set`),
+**sin nombres de una letra**, **sin `console`**, sin `if` anidados y sin comparar contra
+`null`/`undefined`. **No agregar comentarios ni JSDoc** en código nuevo; los existentes se quitan
+en un PR de limpieza aparte.
 
 Las observaciones abiertas de cada ticket viven en `.claude/reviews/DEV-XX.md`. Al trabajar un
 ticket, leer su archivo si existe.
@@ -26,7 +33,7 @@ npm run dev:all / npm run down   # todo en Docker Compose (necesita .env en la r
 
 npm run lint                     # ESLint (flat config de packages/eslint-config)
 npm run format:check             # Prettier (CI falla si no está formateado)
-npm test                         # vitest run --coverage en todos los workspaces
+npm test                         # vitest en todos los workspaces (--passWithNoTests)
 
 npm test -w @deventure/auth-service                       # un workspace
 npx vitest run tests/<archivo>.test.js (dentro del workspace) # un archivo
@@ -37,10 +44,13 @@ npm run db:deploy  -w @deventure/auth-service
 npm run db:seed    -w @deventure/auth-service   # admin/Admin1234, demo/Demo1234
 ```
 
-- Los tests de auth-service usan una base real separada (`auth_db_test`, override con
-  `TEST_DATABASE_URL`): necesitan `npm run db:up`. `tests/global-setup.js` aplica las migraciones
-  y los archivos corren en serie (`fileParallelism: false`). Umbral de coverage: 80%.
-- Probar endpoints a mano: `docs/api/*.http` (extensión REST Client) contra `localhost:3000`.
+- **Los tests no son obligatorios** (decisión del equipo): no agregar Vitest/Playwright a un
+  ticket sin preguntar. Los tests existentes (gateway, contracts, health) se mantienen en verde y
+  se pueden usar como red de seguridad al refactorizar. Los de auth-service usarían una base real
+  separada (`auth_db_test`, requiere `npm run db:up`).
+- **Cada ticket se prueba a mano** (curl, `docs/api/*.http` con REST Client contra
+  `localhost:3000`, o navegador) y el PR muestra cómo. Antes de cerrar: `npm run lint` con 0
+  errores y `npm run format:check` OK.
 - Husky: `pre-commit` corre lint-staged (eslint --fix + prettier); `commit-msg` corre commitlint.
 
 ## Convenciones de git
@@ -89,21 +99,23 @@ cliente → api-gateway :3000 (/api/*) ──REST──> <servicio> :300X (/<ser
 - Errores: lanzar `ValidationError`, `UnauthorizedError`, `ForbiddenError`, `NotFoundError`,
   `ConflictError`, `LockedError`, `ServiceUnavailableError` (o `AppError` con `status`/`code`).
   El `errorHandler` responde siempre `{ "error": { "code", "message", "details"? } }`; respuestas
-  OK van envueltas en `{ "data": ... }`.
+  OK van envueltas en `{ "data": ... }`. En `VALIDATION_ERROR`, `details` es
+  `{ campo: [mensajes] }` (`ZodError.flatten().fieldErrors`). Los casos conocidos (Prisma
+  P2002/P2025, JSON inválido, body muy grande) se despachan con un `Map` en el `errorHandler`.
 - `validate({ body, params, query })` con Zod: reemplaza `req.body`/`req.params` y deja todo en
   `req.validated` (en Express 5 `req.query` es de solo lectura → usar `req.validated.query`).
 
 ### `packages/contracts`
 
 Esquemas Zod compartidos front/back. Todo endpoint que recibe o devuelve datos define su esquema
-acá y se reusa en `validate(...)` (backend) y `zodResolver(...)` (frontend). Los services tipan con
-JSDoc `import('@deventure/contracts').X`.
+acá y se reusa en `validate(...)` (backend) y `zodResolver(...)` (frontend).
 
 ### Estructura interna de un servicio (referencia: `services/auth-service`)
 
-`routes → controllers → services → repositories → mappers`. Controllers solo traducen
-HTTP ↔ service; la lógica está en `services/`; solo `repositories/` usa `prisma`; `mappers/`
-arma la forma pública. `src/db.js` exporta un único `PrismaClient` (auth omite `passwordHash`
+`routes → controllers → services → repositories`. Controllers solo traducen HTTP ↔ service; la
+lógica está en `services/`; solo `repositories/` usa `prisma`, y la consulta (`select` o
+`$queryRaw`) devuelve la forma pública. `auth-service/src/mappers/user.mapper.js` es anterior a
+esta regla y está pendiente de reemplazo: no copiar ese patrón. `src/db.js` exporta un único `PrismaClient` (auth omite `passwordHash`
 por defecto en todas las consultas). Prisma está fijado en **6.19.3**.
 
 ### Estado

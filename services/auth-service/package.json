@@ -7,7 +7,7 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "start:docker": "prisma migrate deploy && prisma db seed && node src/index.js",
-    "test": "vitest run --coverage",
+    "test": "vitest run --passWithNoTests",
     "lint": "eslint .",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
