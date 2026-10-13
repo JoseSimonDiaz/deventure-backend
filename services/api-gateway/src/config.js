@@ -5,7 +5,10 @@ export const gatewayConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET tiene que tener al menos 32 caracteres'),
-  CORS_ORIGIN: z.string().default('http://localhost:5173'),
+  CORS_ORIGIN: z
+    .string()
+    .default('http://localhost:5173')
+    .transform((originList) => originList.trim().split(/\s*,\s*/)),
   AUTH_URL: z.string().url().default('http://localhost:3001'),
   CONTENT_URL: z.string().url().default('http://localhost:3002'),
   GAMEPLAY_URL: z.string().url().default('http://localhost:3003'),

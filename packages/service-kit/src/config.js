@@ -25,10 +25,8 @@ export function loadConfig(schema, env) {
   }
   const result = schema.safeParse(env);
   if (!result.success) {
-    const problems = result.error.issues
-      .map((issue) => `  - ${issue.path.join('.') || '(raíz)'}: ${issue.message}`)
-      .join('\n');
-    throw new Error(`Configuración inválida. Revisá tu archivo .env:\n${problems}`);
+    const problemsByVariable = JSON.stringify(result.error.flatten().fieldErrors, null, 2);
+    throw new Error(`Configuración inválida. Revisá tu archivo .env:\n${problemsByVariable}`);
   }
   return result.data;
 }

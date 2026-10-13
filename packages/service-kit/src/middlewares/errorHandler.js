@@ -1,59 +1,80 @@
 import { ZodError } from 'zod';
 import { AppError } from '../errors.js';
+import { logger } from '../logger.js';
+
+const PRISMA_KNOWN_ERRORS = new Map([
+  ['P2002', { status: 409, code: 'CONFLICT', message: 'El recurso ya existe' }],
+  ['P2025', { status: 404, code: 'NOT_FOUND', message: 'Recurso no encontrado' }],
+]);
+
+const BODY_PARSER_ERRORS = new Map([
+  [
+    'entity.parse.failed',
+    { status: 400, code: 'INVALID_JSON', message: 'El cuerpo del pedido no es un JSON válido' },
+  ],
+  [
+    'entity.too.large',
+    {
+      status: 413,
+      code: 'PAYLOAD_TOO_LARGE',
+      message: 'El cuerpo del pedido es demasiado grande',
+    },
+  ],
+]);
 
 /**
  * @param {import('express').Response} res
- * @param {number} status
- * @param {string} code
- * @param {string} message
- * @param {unknown} [details]
+ * @param {{ status: number, code: string, message: string, details?: unknown }} errorResponse
  */
-function send(res, status, code, message, details) {
-  const error = { code, message };
-  if (details !== undefined) error.details = details;
-  res.status(status).json({ error });
+function sendError(res, { status, code, message, details }) {
+  res.status(status).json({ error: { code, message, details } });
 }
 
 /** Handler para rutas inexistentes (va antes del errorHandler). */
 export function notFoundHandler(req, res) {
-  send(res, 404, 'NOT_FOUND', `Ruta no encontrada: ${req.method} ${req.path}`);
+  sendError(res, {
+    status: 404,
+    code: 'NOT_FOUND',
+    message: `Ruta no encontrada: ${req.method} ${req.path}`,
+  });
 }
+
+const isPrismaKnownError = (error) =>
+  error?.name === 'PrismaClientKnownRequestError' && PRISMA_KNOWN_ERRORS.has(error.code);
 
 /**
  * Último middleware de la app. Traduce cualquier error al formato
  * `{ "error": { "code", "message", "details" } }`. Nunca expone el stack trace.
  */
-export function errorHandler(err, req, res, _next) {
-  if (err instanceof AppError) {
-    return send(res, err.status, err.code, err.message, err.details);
+export function errorHandler(error, req, res, _next) {
+  if (error instanceof AppError) {
+    return sendError(res, error);
   }
 
-  if (err instanceof ZodError || err?.name === 'ZodError') {
-    const details = err.issues.map((issue) => ({
-      path: issue.path.join('.'),
-      message: issue.message,
-    }));
-    return send(res, 400, 'VALIDATION_ERROR', 'Datos inválidos', details);
+  if (error instanceof ZodError || error?.name === 'ZodError') {
+    return sendError(res, {
+      status: 400,
+      code: 'VALIDATION_ERROR',
+      message: 'Datos inválidos',
+      details: error.flatten().fieldErrors,
+    });
   }
 
-  // Errores de express.json()
-  if (err?.type === 'entity.parse.failed') {
-    return send(res, 400, 'INVALID_JSON', 'El cuerpo del pedido no es un JSON válido');
-  }
-  if (err?.type === 'entity.too.large') {
-    return send(res, 413, 'PAYLOAD_TOO_LARGE', 'El cuerpo del pedido es demasiado grande');
+  if (BODY_PARSER_ERRORS.has(error?.type)) {
+    return sendError(res, BODY_PARSER_ERRORS.get(error.type));
   }
 
-  // Errores conocidos de Prisma
-  if (err?.name === 'PrismaClientKnownRequestError') {
-    if (err.code === 'P2002') {
-      return send(res, 409, 'CONFLICT', 'El recurso ya existe', { fields: err.meta?.target });
-    }
-    if (err.code === 'P2025') {
-      return send(res, 404, 'NOT_FOUND', 'Recurso no encontrado');
-    }
+  if (isPrismaKnownError(error)) {
+    return sendError(res, {
+      ...PRISMA_KNOWN_ERRORS.get(error.code),
+      details: error.meta?.target ? { fields: error.meta.target } : undefined,
+    });
   }
 
-  (req.log ?? console).error({ err }, 'Error no controlado');
-  return send(res, 500, 'INTERNAL_ERROR', 'Error interno del servidor');
+  (req.log ?? logger).error({ err: error }, 'Error no controlado');
+  return sendError(res, {
+    status: 500,
+    code: 'INTERNAL_ERROR',
+    message: 'Error interno del servidor',
+  });
 }

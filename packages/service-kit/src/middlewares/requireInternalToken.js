@@ -3,10 +3,13 @@ import { ForbiddenError } from '../errors.js';
 
 export const INTERNAL_TOKEN_HEADER = 'x-internal-token';
 
-function safeEqual(a, b) {
-  const bufA = Buffer.from(a);
-  const bufB = Buffer.from(b);
-  return bufA.length === bufB.length && timingSafeEqual(bufA, bufB);
+function safeEqual(receivedToken, expectedToken) {
+  const receivedBuffer = Buffer.from(receivedToken);
+  const expectedBuffer = Buffer.from(expectedToken);
+  return (
+    receivedBuffer.length === expectedBuffer.length &&
+    timingSafeEqual(receivedBuffer, expectedBuffer)
+  );
 }
 
 /**

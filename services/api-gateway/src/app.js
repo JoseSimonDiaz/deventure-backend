@@ -18,7 +18,7 @@ export function buildApp(config) {
 
   app.use(
     cors({
-      origin: config.CORS_ORIGIN.split(',').map((origin) => origin.trim()),
+      origin: config.CORS_ORIGIN,
       exposedHeaders: ['x-correlation-id'],
     }),
   );

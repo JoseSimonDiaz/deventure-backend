@@ -2,16 +2,12 @@ import { jwtPayloadSchema } from '@deventure/contracts';
 import { UnauthorizedError } from '@deventure/service-kit';
 import jwt from 'jsonwebtoken';
 
-/** Rutas que NO piden JWT (método + ruta completa). */
-export const PUBLIC_ROUTES = [
-  { method: 'POST', path: '/api/auth/register' },
-  { method: 'POST', path: '/api/auth/login' },
-];
+export const PUBLIC_ROUTES = new Set(['POST /api/auth/register', 'POST /api/auth/login']);
 
-const isPublic = (req) =>
-  PUBLIC_ROUTES.some(
-    (route) => route.method === req.method && route.path === req.originalUrl.split('?')[0],
-  );
+const isPublicRoute = (req) => {
+  const [pathWithoutQuery] = req.originalUrl.split('?');
+  return PUBLIC_ROUTES.has(`${req.method} ${pathWithoutQuery}`);
+};
 
 /**
  * Verifica el JWT (`Authorization: Bearer <token>`, HS256) y deja `req.user = { id, role, username }`.
@@ -20,7 +16,7 @@ const isPublic = (req) =>
  */
 export function authenticate(secret) {
   return (req, _res, next) => {
-    if (req.method === 'OPTIONS' || isPublic(req)) return next();
+    if (req.method === 'OPTIONS' || isPublicRoute(req)) return next();
 
     const [scheme, token] = (req.get('authorization') ?? '').split(' ');
     if (scheme !== 'Bearer' || !token) return next(new UnauthorizedError());

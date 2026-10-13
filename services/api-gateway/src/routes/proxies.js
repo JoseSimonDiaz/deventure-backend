@@ -55,24 +55,20 @@ function serviceProxy({ name, target, prefix, timeoutMs }) {
  * @param {import('../config.js').GatewayConfig} config
  */
 export function registerProxies(app, config) {
-  const services = {
-    auth: config.AUTH_URL,
-    content: config.CONTENT_URL,
-    gameplay: config.GAMEPLAY_URL,
-    progress: config.PROGRESS_URL,
-    rewards: config.REWARDS_URL,
-  };
   const timeoutMs = config.PROXY_TIMEOUT_MS;
 
-  for (const [name, target] of Object.entries(services)) {
-    app.use(
-      `/api/admin/${name}`,
-      requireRole('admin'),
-      serviceProxy({ name, target, prefix: '/admin', timeoutMs }),
-    );
-  }
+  registerServiceRoutes(app, { name: 'auth', target: config.AUTH_URL, timeoutMs });
+  registerServiceRoutes(app, { name: 'content', target: config.CONTENT_URL, timeoutMs });
+  registerServiceRoutes(app, { name: 'gameplay', target: config.GAMEPLAY_URL, timeoutMs });
+  registerServiceRoutes(app, { name: 'progress', target: config.PROGRESS_URL, timeoutMs });
+  registerServiceRoutes(app, { name: 'rewards', target: config.REWARDS_URL, timeoutMs });
+}
 
-  for (const [name, target] of Object.entries(services)) {
-    app.use(`/api/${name}`, serviceProxy({ name, target, prefix: `/${name}`, timeoutMs }));
-  }
+function registerServiceRoutes(app, { name, target, timeoutMs }) {
+  app.use(
+    `/api/admin/${name}`,
+    requireRole('admin'),
+    serviceProxy({ name, target, prefix: '/admin', timeoutMs }),
+  );
+  app.use(`/api/${name}`, serviceProxy({ name, target, prefix: `/${name}`, timeoutMs }));
 }

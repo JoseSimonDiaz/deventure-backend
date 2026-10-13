@@ -1,7 +1,13 @@
-/** Headers que SOLO puede poner el gateway. Si vienen del cliente se borran (no se pueden falsificar). */
-export const TRUSTED_HEADERS = ['x-user-id', 'x-user-role', 'x-user-name', 'x-internal-token'];
+import { INTERNAL_TOKEN_HEADER } from '@deventure/service-kit';
+
+export const USER_ID_HEADER = 'x-user-id';
+export const USER_ROLE_HEADER = 'x-user-role';
+export const USER_NAME_HEADER = 'x-user-name';
 
 export function stripIdentityHeaders(req, _res, next) {
-  for (const header of TRUSTED_HEADERS) delete req.headers[header];
+  delete req.headers[USER_ID_HEADER];
+  delete req.headers[USER_ROLE_HEADER];
+  delete req.headers[USER_NAME_HEADER];
+  delete req.headers[INTERNAL_TOKEN_HEADER];
   next();
 }
