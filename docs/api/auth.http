@@ -35,3 +35,7 @@ GET {{gateway}}/api/auth/me
 
 ### Ruta interna desde afuera → 404
 POST {{gateway}}/api/progress/internal/level-completions
+
+### Marcar la intro como vista (usa el token del login de arriba) → 200 con introSeen: true
+PATCH {{gateway}}/api/auth/me/intro-seen
+Authorization: Bearer {{login.response.body.data.token}}
