@@ -13,10 +13,6 @@ export const REDACT_PATHS = [
 ];
 
 export function createLogger(name) {
-<<<<<<< HEAD
-=======
-  // Se lee al crear el logger (no al importar el módulo) para respetar el .env ya cargado
->>>>>>> 91d40d8 (Development (#1))
   const isTest = process.env.NODE_ENV === 'test' || Boolean(process.env.VITEST);
   const isDev = process.env.NODE_ENV === 'development';
   return pino({
