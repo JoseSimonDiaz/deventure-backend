@@ -112,3 +112,7 @@ export async function getMe(userId) {
   if (!user) throw new UnauthorizedError('La cuenta ya no existe');
   return user;
 }
+
+export function markIntroSeen(userId) {
+  return userRepository.updatePublic(userId, { introSeen: true });
+}
