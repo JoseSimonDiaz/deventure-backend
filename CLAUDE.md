@@ -128,9 +128,21 @@ esta regla y está pendiente de reemplazo: no copiar ese patrón. `src/db.js` ex
 >>>>>>> 91d40d8 (Development (#1))
 por defecto en todas las consultas). Prisma está fijado en **6.19.3**.
 
+**Cliente de Prisma por servicio:** cada `schema.prisma` declara
+`output = "../generated/prisma-client"` y el código importa desde
+`../generated/prisma-client/index.js`, **nunca desde `@prisma/client`**. Con npm workspaces,
+`@prisma/client` apunta a un único cliente compartido en la raíz y los servicios se pisarían los
+modelos entre sí. `generated/` está en `.gitignore` y se regenera con `npm install`
+(`postinstall: prisma generate`). Los enums de Prisma (`ChallengeType`, `Prisma.SortOrder`) se
+importan del mismo lugar.
+
+Las rutas públicas de un servicio usan `requireUser` (vienen del gateway); las `/internal/*`,
+`requireInternalToken`. Ejemplo completo de los dos tipos: `services/content-service/src/routes/`.
+
 ### Estado
 
-auth-service y api-gateway están implementados; content, gameplay, progress y rewards son
+auth-service, api-gateway y content-service (DEV-02: lectura de zonas, niveles, teoría y los
+endpoints internos para gameplay) están implementados; gameplay, progress y rewards son
 esqueletos con solo `/health`. `apps/web` (React + Vite + Tailwind) todavía no existe aunque ya
 está en los workspaces y en la config de ESLint. `Dev-venture/` es un repo git aparte (backlog y
 script de Trello), no forma parte del monorepo.

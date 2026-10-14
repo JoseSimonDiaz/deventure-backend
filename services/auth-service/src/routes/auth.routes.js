@@ -9,3 +9,4 @@ authRouter.post('/register', validate({ body: registerSchema }), authController.
 authRouter.post('/login', validate({ body: loginSchema }), authController.login);
 
 authRouter.get('/me', requireUser, authController.me);
+authRouter.patch('/me/intro-seen', requireUser, authController.markIntroSeen);

@@ -610,7 +610,9 @@ aceptación). Adaptá sus rutas y ejemplos según la sección 16.
    (`routes → controllers → services → repositories`) y suma su proxy con
    `registerServiceRoutes` en `services/api-gateway/src/routes/proxies.js`. También hay que
    agregarlo a los filtros y a la lista `ALL` de `.github/workflows/ci.yml`, a
-   `infra/postgres/init.sql` (su base) y a `infra/docker-compose.yml`.
+   `infra/postgres/init.sql` (su base) y a `infra/docker-compose.yml`. Su `schema.prisma` lleva
+   `output = "../generated/prisma-client"` y se importa desde ahí, nunca desde `@prisma/client`
+   (ver `CLAUDE.md`).
 
 =======
 | P | Ticket | Qué | Estado esperado del repo |

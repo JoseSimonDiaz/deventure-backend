@@ -56,7 +56,11 @@ services:
   content-service:
     <<: *service
     build: { context: .., dockerfile: services/content-service/Dockerfile }
-    environment: { NODE_ENV: production, PORT: 3002, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    environment:
+      NODE_ENV: production
+      PORT: 3002
+      DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/content_db?schema=public
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
     expose: ['3002']
 
   gameplay-service:

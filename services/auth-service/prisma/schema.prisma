@@ -9,6 +9,7 @@
 
 generator client {
   provider      = "prisma-client-js"
+  output        = "../generated/prisma-client"
   // native = tu máquina (Windows/Mac/Linux); linux-musl = imagen Docker node:22-alpine
   binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
 }

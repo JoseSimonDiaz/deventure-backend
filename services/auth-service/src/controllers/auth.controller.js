@@ -15,4 +15,9 @@ export const authController = {
     const user = await authService.getMe(req.user.id);
     res.json({ data: user });
   },
+
+  async markIntroSeen(req, res) {
+    const user = await authService.markIntroSeen(req.user.id);
+    res.json({ data: user });
+  },
 };

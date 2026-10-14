@@ -9,3 +9,4 @@ package-lock.json
 .claude/agents
 .claude/commands
 Dev-venture
+services/*/generated
