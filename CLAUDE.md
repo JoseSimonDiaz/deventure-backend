@@ -86,7 +86,9 @@ cliente → api-gateway :3000 (/api/*) ──REST──> <servicio> :300X (/<ser
 - Rutas públicas sin JWT: lista `PUBLIC_ROUTES` en `middlewares/authenticate.js` — una ruta
   pública nueva se agrega ahí.
 - **Los servicios no validan JWT**: usan `requireUser` / `requireRole` de service-kit, que leen
-  los headers que puso el gateway. Las rutas `/internal/*` se protegen con `requireInternalToken`.
+  los headers que puso el gateway y exigen el `x-internal-token` que el gateway agrega a cada
+  request autenticado (en Render Free los servicios son públicos). Las rutas `/internal/*` se
+  protegen con `requireInternalToken`.
 - Comunicación **solo REST**, sin colas ni eventos. Una base Postgres por servicio, sin foreign
   keys entre servicios (ids ajenos se guardan como `uuid` sueltos).
 

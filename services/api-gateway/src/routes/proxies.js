@@ -1,7 +1,7 @@
-import { requireRole } from '@deventure/service-kit';
+import { INTERNAL_TOKEN_HEADER, requireRole } from '@deventure/service-kit';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 
-function serviceProxy({ name, target, prefix, timeoutMs }) {
+function serviceProxy({ name, target, prefix, timeoutMs, internalToken }) {
   return createProxyMiddleware({
     target,
     changeOrigin: true,
@@ -15,6 +15,7 @@ function serviceProxy({ name, target, prefix, timeoutMs }) {
           proxyReq.setHeader('x-user-id', req.user.id);
           proxyReq.setHeader('x-user-role', req.user.role);
           proxyReq.setHeader('x-user-name', req.user.username);
+          proxyReq.setHeader(INTERNAL_TOKEN_HEADER, internalToken);
         }
       },
       error(err, req, res) {
@@ -36,21 +37,31 @@ function serviceProxy({ name, target, prefix, timeoutMs }) {
 }
 
 export function registerProxies(app, config) {
-  const timeoutMs = config.PROXY_TIMEOUT_MS;
+  const proxySettings = {
+    timeoutMs: config.PROXY_TIMEOUT_MS,
+    internalToken: config.INTERNAL_TOKEN,
+  };
 
-  registerServiceRoutes(app, { name: 'auth', target: config.AUTH_URL, timeoutMs });
-  registerServiceRoutes(app, { name: 'content', target: config.CONTENT_URL, timeoutMs });
-  registerServiceRoutes(app, { name: 'gameplay', target: config.GAMEPLAY_URL, timeoutMs });
-  registerServiceRoutes(app, { name: 'progress', target: config.PROGRESS_URL, timeoutMs });
-  registerServiceRoutes(app, { name: 'rewards', target: config.REWARDS_URL, timeoutMs });
-  registerServiceRoutes(app, { name: 'assistant', target: config.ASSISTANT_URL, timeoutMs });
+  registerServiceRoutes(app, { name: 'auth', target: config.AUTH_URL, ...proxySettings });
+  registerServiceRoutes(app, { name: 'content', target: config.CONTENT_URL, ...proxySettings });
+  registerServiceRoutes(app, { name: 'gameplay', target: config.GAMEPLAY_URL, ...proxySettings });
+  registerServiceRoutes(app, { name: 'progress', target: config.PROGRESS_URL, ...proxySettings });
+  registerServiceRoutes(app, { name: 'rewards', target: config.REWARDS_URL, ...proxySettings });
+  registerServiceRoutes(app, {
+    name: 'assistant',
+    target: config.ASSISTANT_URL,
+    ...proxySettings,
+  });
 }
 
-function registerServiceRoutes(app, { name, target, timeoutMs }) {
+function registerServiceRoutes(app, { name, target, timeoutMs, internalToken }) {
   app.use(
     `/api/admin/${name}`,
     requireRole('admin'),
-    serviceProxy({ name, target, prefix: '/admin', timeoutMs }),
+    serviceProxy({ name, target, prefix: '/admin', timeoutMs, internalToken }),
   );
-  app.use(`/api/${name}`, serviceProxy({ name, target, prefix: `/${name}`, timeoutMs }));
+  app.use(
+    `/api/${name}`,
+    serviceProxy({ name, target, prefix: `/${name}`, timeoutMs, internalToken }),
+  );
 }
