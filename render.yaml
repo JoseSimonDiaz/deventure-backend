@@ -1,0 +1,218 @@
+# Blueprint de Render para el backend (plan Free). Pasos y variables: docs/deploy-render.md.
+# En Free los servicios no reciben tráfico de la red privada: los 7 son web públicos y se llaman
+# por su URL onrender.com. Los servicios internos solo aceptan requests con INTERNAL_TOKEN.
+
+envVarGroups:
+  - name: deventure-shared
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: OTEL_SDK_DISABLED
+        value: 'true'
+      - key: INTERNAL_TOKEN
+        generateValue: true
+  - name: deventure-jwt
+    envVars:
+      - key: JWT_SECRET
+        generateValue: true
+
+services:
+  - type: web
+    name: deventure-gateway
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./infra/service.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - services/api-gateway/**
+        - packages/**
+        - infra/service.Dockerfile
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: SERVICE
+        value: api-gateway
+      - fromGroup: deventure-shared
+      - fromGroup: deventure-jwt
+      - key: CORS_ORIGIN
+        sync: false
+      - key: AUTH_URL
+        fromService: { name: deventure-auth, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: CONTENT_URL
+        fromService: { name: deventure-content, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: GAMEPLAY_URL
+        fromService: { name: deventure-gameplay, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: PROGRESS_URL
+        fromService: { name: deventure-progress, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: REWARDS_URL
+        fromService: { name: deventure-rewards, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: ASSISTANT_URL
+        fromService: { name: deventure-assistant, type: web, envVarKey: RENDER_EXTERNAL_URL }
+
+  - type: web
+    name: deventure-auth
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./infra/service.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - services/auth-service/**
+        - packages/**
+        - infra/service.Dockerfile
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: SERVICE
+        value: auth-service
+      - fromGroup: deventure-shared
+      - fromGroup: deventure-jwt
+      - key: DATABASE_URL
+        sync: false
+      - key: SEED_ADMIN_PASSWORD
+        sync: false
+      - key: SEED_DEMO_PASSWORD
+        sync: false
+      - key: GAMEPLAY_URL
+        fromService: { name: deventure-gameplay, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: PROGRESS_URL
+        fromService: { name: deventure-progress, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: REWARDS_URL
+        fromService: { name: deventure-rewards, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: ASSISTANT_URL
+        fromService: { name: deventure-assistant, type: web, envVarKey: RENDER_EXTERNAL_URL }
+
+  - type: web
+    name: deventure-content
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./infra/service.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - services/content-service/**
+        - packages/**
+        - infra/service.Dockerfile
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: SERVICE
+        value: content-service
+      - fromGroup: deventure-shared
+      - key: DATABASE_URL
+        sync: false
+      - key: GAMEPLAY_URL
+        fromService: { name: deventure-gameplay, type: web, envVarKey: RENDER_EXTERNAL_URL }
+
+  - type: web
+    name: deventure-gameplay
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./infra/service.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - services/gameplay-service/**
+        - packages/**
+        - infra/service.Dockerfile
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: SERVICE
+        value: gameplay-service
+      - fromGroup: deventure-shared
+      - key: DATABASE_URL
+        sync: false
+      - key: CONTENT_URL
+        fromService: { name: deventure-content, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: PROGRESS_URL
+        fromService: { name: deventure-progress, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: REWARDS_URL
+        fromService: { name: deventure-rewards, type: web, envVarKey: RENDER_EXTERNAL_URL }
+
+  - type: web
+    name: deventure-progress
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./infra/service.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - services/progress-service/**
+        - packages/**
+        - infra/service.Dockerfile
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: SERVICE
+        value: progress-service
+      - fromGroup: deventure-shared
+      - key: DATABASE_URL
+        sync: false
+      - key: CONTENT_URL
+        fromService: { name: deventure-content, type: web, envVarKey: RENDER_EXTERNAL_URL }
+
+  - type: web
+    name: deventure-rewards
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./infra/service.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - services/rewards-service/**
+        - packages/**
+        - infra/service.Dockerfile
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: SERVICE
+        value: rewards-service
+      - fromGroup: deventure-shared
+      - key: DATABASE_URL
+        sync: false
+      - key: CONTENT_URL
+        fromService: { name: deventure-content, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: PROGRESS_URL
+        fromService: { name: deventure-progress, type: web, envVarKey: RENDER_EXTERNAL_URL }
+
+  - type: web
+    name: deventure-assistant
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./infra/service.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    buildFilter:
+      paths:
+        - services/assistant-service/**
+        - packages/**
+        - infra/service.Dockerfile
+        - package.json
+        - package-lock.json
+    envVars:
+      - key: SERVICE
+        value: assistant-service
+      - fromGroup: deventure-shared
+      - key: DATABASE_URL
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: CONTENT_URL
+        fromService: { name: deventure-content, type: web, envVarKey: RENDER_EXTERNAL_URL }
+      - key: GAMEPLAY_URL
+        fromService: { name: deventure-gameplay, type: web, envVarKey: RENDER_EXTERNAL_URL }

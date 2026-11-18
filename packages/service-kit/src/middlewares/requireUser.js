@@ -1,9 +1,11 @@
 import { ForbiddenError, UnauthorizedError } from '../errors.js';
+import { hasValidInternalToken } from './requireInternalToken.js';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const ROLES = new Set(['player', 'admin']);
 
 export function requireUser(req, _res, next) {
+  if (!hasValidInternalToken(req)) return next(new UnauthorizedError());
   const id = req.get('x-user-id');
   const role = req.get('x-user-role');
   if (!id || !UUID.test(id) || !ROLES.has(role)) {
