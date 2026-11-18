@@ -5,3 +5,4 @@ CREATE DATABASE content_db;
 CREATE DATABASE gameplay_db;
 CREATE DATABASE progress_db;
 CREATE DATABASE rewards_db;
+CREATE DATABASE assistant_db;

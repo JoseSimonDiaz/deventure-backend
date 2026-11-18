@@ -1,0 +1,77 @@
+### Probar con la extensión "REST Client" de VS Code (botón "Send Request" sobre cada pedido).
+### Requiere `npm run dev` con todos los servicios y los seeds cargados.
+@gateway = http://localhost:3000
+@progress = http://localhost:3004
+@internalToken = dev-internal-token-deventure
+@logicZone = 10000000-0000-4000-8000-000000000001
+
+### Login con el usuario campeon (seed con el juego completo)
+# @name login
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{ "identifier": "campeon", "password": "Demo1234" }
+
+### Progreso para el mapa: niveles completados, desbloqueados y estrellas → 200
+GET {{gateway}}/api/progress/me
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Resumen "Mi progreso": totales, racha y niveles por zona (gameCompleted true) → 200
+GET {{gateway}}/api/progress/me/summary
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Zonas cuya teoría ya vio → 200
+GET {{gateway}}/api/progress/me/theory-seen
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Marcar la teoría como vista (idempotente) → 204
+POST {{gateway}}/api/progress/me/theory-seen
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{ "zoneId": "{{logicZone}}" }
+
+### No existe un endpoint público que escriba progreso → 404
+POST {{gateway}}/api/progress/me
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{ "bestStars": 3 }
+
+### Logros del jugador (interno, lo usa rewards) → 200
+GET {{progress}}/internal/users/00000000-0000-4000-8000-000000000003/achievements
+x-internal-token: {{internalToken}}
+
+### Galería completa → 200 { rewards, total, unlockedCount }
+GET {{gateway}}/api/rewards/me
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Galería filtrada por tipo y estado (validado con Zod) → 200
+GET {{gateway}}/api/rewards/me?type=avatar&status=unlocked
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Filtro inválido → 400 VALIDATION_ERROR
+GET {{gateway}}/api/rewards/me?type=espada
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Marcar una recompensa como vista → 204
+PATCH {{gateway}}/api/rewards/me/13000000-0000-4000-8000-000000000001/seen
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Usar un avatar desbloqueado → 200 con avatarRewardId
+PATCH {{gateway}}/api/auth/me/avatar
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{ "avatarRewardId": "13000000-0000-4000-8000-000000000002" }
+
+### Ajustes guardados en la cuenta → 200
+GET {{gateway}}/api/auth/me/settings
+Authorization: Bearer {{login.response.body.data.token}}
+
+### Cambiar ajustes (parcial) → 200 · brillo fuera de 50-150 → 400
+PATCH {{gateway}}/api/auth/me/settings
+Authorization: Bearer {{login.response.body.data.token}}
+Content-Type: application/json
+
+{ "musicVolume": 0, "brightness": 90 }

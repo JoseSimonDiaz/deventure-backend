@@ -38,6 +38,10 @@ si deja una lección general, agregarla acá con su origen `_(DEV-XX #n)_`.
 - Booleanos con `is`/`has`/`can`/`should`: `isLocked`, `hasSeenIntro`.
 - Funciones con verbo + objeto: `findUserByIdentifier`, `registerServiceRoutes`.
 - Parámetros con el dominio: `userId`, `levelId`, no `id` suelto cuando hay más de uno en juego.
+- El nombre dice lo que hace la función y se vuelve a revisar cuando cambia el comportamiento:
+  un sufijo como `ById` describe la entrada, no el resultado. _(ipacym #47)_
+- Un grupo de valores se nombra por lo que comparten, no por un concepto que no existe en el
+  dominio: si un revisor tendría que preguntar qué significa, se renombra. _(ipacym #53)_
 
 ## 3. Logs y errores
 
@@ -80,14 +84,9 @@ si deja una lección general, agregarla acá con su origen `_(DEV-XX #n)_`.
 
 - No agregar comentarios (`//` ni `/** */`) en código nuevo o modificado. Los nombres de funciones
   y variables, y el mensaje de un `throw` o `logger.error`, explican el porqué.
-<<<<<<< HEAD
 - El código JS del repo no tiene comentarios ni JSDoc. Los comentarios del `schema.prisma`, de
   los SQL y de los YAML de infraestructura sí se mantienen: documentan el modelo de datos y la
   infraestructura, no código.
-=======
-- Los comentarios y el JSDoc que ya existen no se tocan en un PR de feature (agranda el diff). Se
-  quitan en un PR propio de limpieza.
->>>>>>> 91d40d8 (Development (#1))
 - Antes de cerrar un cambio: `git diff -- <archivos> | grep -E '^\+\s*(//|/\*|\*)'` y sacar lo que
   se haya agregado.
 
@@ -111,7 +110,13 @@ si deja una lección general, agregarla acá con su origen `_(DEV-XX #n)_`.
 - Nada de foreign keys ni consultas a la base de otro servicio: se llama a su `/internal/*`.
 - Un solo cliente HTTP configurado por servicio destino (base URL + headers), no repetir la URL y
   el header en cada función.
-- Antes de crear un archivo, util o helper nuevo, verificar que el patrón no exista ya.
+- Antes de crear un archivo, util o helper nuevo, verificar que el patrón no exista ya. En la
+  tercera copia de un patrón se extrae a `service-kit` o `contracts` y las copias anteriores pasan
+  a usarlo en el mismo cambio. _(ipacym #41)_
+- Un util genérico no importa constantes de un dominio: recibe todo por parámetro. Los archivos de
+  constantes solo exportan valores, no funciones con lógica. _(ipacym #46, #52)_
+- Los controllers desestructuran del `req.body` las propiedades obligatorias que leen; `...rest`
+  es solo para las opcionales. _(rc-platform 1784)_
 
 ## 8. API REST
 
@@ -131,6 +136,14 @@ si deja una lección general, agregarla acá con su origen `_(DEV-XX #n)_`.
   atómica en la base: `UPDATE ... RETURNING`, `upsert`, transacción o `version` optimista.
 - Los endpoints internos que escriben son idempotentes (por `sessionId` o `userId`).
 - Antes de pasar datos grandes a una consulta, seleccionar solo los campos necesarios.
+- Toda consulta que alimenta una lista tiene `orderBy` explícito: sin él, las filas cambian de
+  orden después de un update. _(ipacym #33)_
+- En una operación sobre varios registros, se valida todo (existencia, permiso, tipo) antes del
+  primer efecto: escritura o llamada a otro servicio. _(ipacym #22)_
+- Una sola acción del usuario es un solo request; nunca un `await` de un request dentro de un
+  bucle. _(ipacym #21)_
+- Si una respuesta expone un campo, el proceso que lo alimenta tiene que escribirlo.
+  _(rc-platform 1794)_
 
 ## 10. Configuración y variables de entorno
 
@@ -149,6 +162,9 @@ si deja una lección general, agregarla acá con su origen `_(DEV-XX #n)_`.
 - No "aprovechar" para renombrar, reordenar o unificar código ajeno al ticket.
 - Antes de cerrar, `git diff main -- <archivo>` y confirmar que el diff es el mínimo necesario.
 - Sin código especulativo ni placeholders (YAGNI). El código muerto se borra.
+- Si aparece un cambio que no hiciste, se avisa en vez de darlo por bueno. _(ipacym #35)_
+- Antes del PR, releer el diff propio: ¿cada nombre dice lo que hace?, ¿busqué un helper
+  existente?, ¿cada escritura mantiene las validaciones del flujo al que se suma? _(ipacym #43)_
 
 ## 12. Proceso
 
@@ -158,15 +174,12 @@ si deja una lección general, agregarla acá con su origen `_(DEV-XX #n)_`.
   verde. Cada ticket se prueba a mano (curl, `docs/api/*.http`, navegador) y el PR dice cómo.
 - Al terminar: `npm run lint` sin errores y `npm run format:check` OK.
 
-## 13. Frontend (`apps/web`, cuando exista)
+## 13. Frontend
 
-- Ninguna llamada HTTP en componentes: todas viven en `src/services/`, con un único cliente
-  configurado.
-- No filtrar, ordenar ni agregar datos en el cliente: pedirlo al backend con query params.
-- Sin funciones inline en el JSX (`onClick={() => ...}`): declararlas en el cuerpo del componente.
-- Sin lógica tipo util dentro de componentes: extraerla a `src/utils/`.
-- Textos, rutas y valores de configuración en `src/constants/`. Reusar las etiquetas existentes.
-- Esquemas de formularios desde `@deventure/contracts` (`zodResolver`).
+El frontend vive en el repo `deventure-front` y sus reglas están en su
+`.claude/rules/code-rules.md`. Lo que toca a los dos repos:
+
+- No filtrar, ordenar ni agregar datos en el cliente: el backend expone query params para eso.
 - Los mensajes de error del backend se muestran solo para los códigos de negocio esperados
   (400, 403, 409, 423, 429). Ante un 500 se muestra un mensaje genérico, nunca el mensaje crudo.
-- Textos legibles: nada de fuentes menores a 14px.
+- La UI solo ofrece lo que el backend acepta: los dos usan el mismo criterio. _(ipacym #25)_

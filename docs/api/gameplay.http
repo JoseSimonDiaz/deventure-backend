@@ -1,0 +1,119 @@
+### Probar con la extensión "REST Client" de VS Code (botón "Send Request" sobre cada pedido).
+### Requiere `npm run dev` con todos los servicios y los seeds cargados.
+### Ojo con las reglas anti-trampa: 2 s entre crear la sesión y el primer acierto, 1 s entre intentos.
+@gateway = http://localhost:3000
+@gameplay = http://localhost:3003
+@internalToken = dev-internal-token-deventure
+@firstLevel = 11000000-0000-4000-8000-000000000101
+@secondLevel = 11000000-0000-4000-8000-000000000102
+@firstChallenge = 12000000-0000-4000-8000-000000010101
+@secondChallenge = 12000000-0000-4000-8000-000000010102
+
+### Registrar un jugador nuevo (solo tiene desbloqueado el nivel 1)
+# @name register
+POST {{gateway}}/api/auth/register
+Content-Type: application/json
+
+{
+  "username": "vikingo_{{$randomInt 1000 9999}}",
+  "email": "vikingo{{$randomInt 1000 9999}}@deventure.dev",
+  "password": "Clave1234"
+}
+
+### Nivel 2 todavía bloqueado → 403 LEVEL_LOCKED
+POST {{gateway}}/api/gameplay/sessions
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "levelId": "{{secondLevel}}" }
+
+### Empezar el nivel 1 → 201 (3 vidas, desafío 0)
+# @name session
+POST {{gateway}}/api/gameplay/sessions
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "levelId": "{{firstLevel}}" }
+
+### Estado de la sesión → 200
+GET {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}
+Authorization: Bearer {{register.response.body.data.token}}
+
+### Pedir una pista (no resta vidas) → 200 { order, text, remaining }
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/hints
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "{{firstChallenge}}" }
+
+### Respuesta incorrecta → correct false, livesLeft 2, mensaje del error común
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/attempts
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "{{firstChallenge}}", "answer": { "type": "multiple_choice", "optionId": "screen" } }
+
+### Desafío que no es el actual → 400 CHALLENGE_MISMATCH
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/attempts
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "{{secondChallenge}}", "answer": { "type": "order_blocks", "order": ["k", "r", "b"] } }
+
+### Respuesta correcta → correct true, explicación, nextIndex 1
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/attempts
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "{{firstChallenge}}", "answer": { "type": "multiple_choice", "optionId": "instructions" } }
+
+### Ordenar bloques correctamente
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/attempts
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "{{secondChallenge}}", "answer": { "type": "order_blocks", "order": ["k", "r", "b"] } }
+
+### Desafío 3 (opción múltiple)
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/attempts
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "12000000-0000-4000-8000-000000010103", "answer": { "type": "multiple_choice", "optionId": "different" } }
+
+### Último desafío (¿qué imprime?) → sessionStatus won + result, desbloqueos y recompensas
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/attempts
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "12000000-0000-4000-8000-000000010104", "answer": { "type": "predict_output", "output": "Hola\nvikingo" } }
+
+### Sesión terminada → 409 SESSION_CLOSED
+POST {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}/attempts
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "challengeId": "{{firstChallenge}}", "answer": { "type": "multiple_choice", "optionId": "instructions" } }
+
+### Abandonar una sesión (PATCH sobre el recurso) → 200 status abandoned
+PATCH {{gateway}}/api/gameplay/sessions/{{session.response.body.data.id}}
+Authorization: Bearer {{register.response.body.data.token}}
+Content-Type: application/json
+
+{ "status": "abandoned" }
+
+### Probar un validador sin jugar (interno, lo usa la vista previa del admin)
+POST {{gameplay}}/internal/validations
+x-internal-token: {{internalToken}}
+Content-Type: application/json
+
+{
+  "challenge": {
+    "type": "fill_code",
+    "language": "sql",
+    "payload": { "mode": "free", "starterCode": "" },
+    "solution": { "accepted": ["SELECT nombre FROM vikingos WHERE edad > 30;"] },
+    "commonErrors": []
+  },
+  "answer": { "type": "fill_code", "code": "select nombre from vikingos where edad>30" }
+}

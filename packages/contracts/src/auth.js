@@ -72,7 +72,10 @@ export const jwtPayloadSchema = z.object({
   sub: idSchema,
   role: roleSchema,
   username: z.string(),
+  ver: z.number().int().min(0),
 });
+
+export const userSessionSchema = z.object({ sessionVersion: z.number().int().min(0) });
 
 const volumeSchema = z.number().int().min(VOLUME_MIN).max(VOLUME_MAX);
 
@@ -91,3 +94,36 @@ export const DEFAULT_SETTINGS = Object.freeze({
   sfxMuted: false,
   brightness: 100,
 });
+
+export const AVATAR_BASES = Object.freeze([
+  'viking-01',
+  'viking-02',
+  'viking-03',
+  'viking-04',
+  'viking-05',
+  'viking-06',
+]);
+
+export const updateSettingsSchema = settingsSchema
+  .partial()
+  .strict()
+  .refine((settingsPatch) => Object.keys(settingsPatch).length > 0, {
+    message: 'Mandá al menos un ajuste para cambiar',
+  });
+
+export const updateUsernameSchema = z.object({ username: usernameSchema });
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Ingresá tu contraseña actual').max(BCRYPT_MAX_PASSWORD_BYTES),
+  newPassword: passwordSchema,
+});
+
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, 'Ingresá tu contraseña').max(BCRYPT_MAX_PASSWORD_BYTES),
+  usernameConfirmation: z.string().min(1, 'Escribí tu nombre de usuario para confirmar'),
+});
+
+export const updateAvatarSchema = z.union([
+  z.object({ avatarBase: z.enum(AVATAR_BASES) }).strict(),
+  z.object({ avatarRewardId: idSchema }).strict(),
+]);

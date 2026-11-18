@@ -107,3 +107,21 @@ model Hint {
   @@unique([challengeId, order])
   @@map("hints")
 }
+
+// Registro de cada acción de admin (RN-55): quién, qué, antes y después. Se escribe en la misma
+// transacción que el cambio.
+model AuditLog {
+  id        String   @id @default(uuid()) @db.Uuid
+  // users.id de auth-service (sin FK)
+  userId    String   @map("user_id") @db.Uuid
+  action    String   @db.VarChar(30)
+  entity    String   @db.VarChar(30)
+  entityId  String   @map("entity_id") @db.Uuid
+  before    Json?
+  after     Json?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([entity, entityId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}

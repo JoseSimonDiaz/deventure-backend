@@ -6,6 +6,9 @@ dist/
 coverage/
 .DS_Store
 *.log
+.claide
+.playwright-mcp
+CLAUDE.md
 
 # Claude Code (config personal y artefactos)
 .claude/settings.local.json

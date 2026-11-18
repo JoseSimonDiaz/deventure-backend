@@ -1,0 +1,84 @@
+// progress-service · base progress_db (puerto 3004) · Prisma 6.19.3
+// Dueño del progreso del jugador: mejores resultados por nivel, desbloqueos, teoría vista y racha.
+// El progreso solo se escribe por POST /internal/level-completions (RN-39), idempotente por sessionId.
+// userId, levelId y zoneId son ids de otros servicios: uuid sin foreign key.
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma-client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Se crea la primera vez que se consulta el progreso del jugador, junto con el desbloqueo del
+// primer nivel de la primera zona (RN-11)
+model Player {
+  userId    String   @id @map("user_id") @db.Uuid
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("players")
+}
+
+// Mejor resultado por nivel (RN-20): más estrellas; si empata, menor duración
+model LevelProgress {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId           String   @map("user_id") @db.Uuid
+  levelId          String   @map("level_id") @db.Uuid
+  zoneId           String   @map("zone_id") @db.Uuid
+  bestStars        Int      @map("best_stars")
+  bestLivesLeft    Int      @map("best_lives_left")
+  bestDurationMs   Int      @map("best_duration_ms")
+  // Suma de la duración de todas las veces que ganó el nivel (tiempo total jugado, DEV-30)
+  totalDurationMs  BigInt   @map("total_duration_ms")
+  attemptsCount    Int      @default(1) @map("attempts_count")
+  firstCompletedAt DateTime @map("first_completed_at")
+  lastPlayedAt     DateTime @map("last_played_at")
+
+  @@unique([userId, levelId])
+  @@index([levelId])
+  @@map("level_progress")
+}
+
+// Lo desbloqueado nunca se vuelve a bloquear (RN-13): solo INSERT ... ON CONFLICT DO NOTHING
+model UnlockedLevel {
+  userId     String   @map("user_id") @db.Uuid
+  levelId    String   @map("level_id") @db.Uuid
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+
+  @@id([userId, levelId])
+  @@map("unlocked_levels")
+}
+
+model TheoryView {
+  userId String   @map("user_id") @db.Uuid
+  zoneId String   @map("zone_id") @db.Uuid
+  seenAt DateTime @default(now()) @map("seen_at")
+
+  @@id([userId, zoneId])
+  @@map("theory_views")
+}
+
+// Un registro por día con al menos un nivel ganado: base de la racha (RN-38)
+model PlayDay {
+  userId String   @map("user_id") @db.Uuid
+  day    DateTime @db.Date
+
+  @@id([userId, day])
+  @@map("play_days")
+}
+
+// Idempotencia de POST /internal/level-completions: reenviar la misma sesión devuelve la misma respuesta
+model ProcessedCompletion {
+  sessionId String   @id @map("session_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  response  Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("processed_completions")
+}

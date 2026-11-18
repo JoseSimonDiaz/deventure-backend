@@ -1,0 +1,87 @@
+// rewards-service · base rewards_db (puerto 3005) · Prisma 6.19.3
+// Catálogo de recompensas, reglas de desbloqueo y recompensas obtenidas por cada jugador.
+// La evaluación (POST /internal/evaluations) pide a progress los logros del jugador y otorga, en
+// una sola consulta, todas las recompensas cuya regla se cumple y todavía no tiene (RN-41/42).
+// userId, levelId y zoneId son ids de otros servicios: uuid sin foreign key.
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma-client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RewardType {
+  art
+  character
+  avatar
+  template
+
+  @@map("reward_type")
+}
+
+// Colores en el front: común gris, rara azul, épica violeta (RN-40)
+enum Rarity {
+  common
+  rare
+  epic
+
+  @@map("reward_rarity")
+}
+
+enum RuleType {
+  level_completed // ruleValue { levelId }
+  zone_completed // ruleValue { zoneId }
+  zone_perfect // ruleValue { zoneId }: 3 estrellas en todos los niveles de la zona
+  total_stars // ruleValue { stars }
+
+  @@map("reward_rule_type")
+}
+
+model Reward {
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug          String     @unique @db.VarChar(60)
+  name          String     @db.VarChar(80)
+  description   String
+  type          RewardType
+  rarity        Rarity
+  // La imagen real solo sale por la API si el jugador ya obtuvo la recompensa (RN-43)
+  imageUrl      String     @map("image_url") @db.VarChar(300)
+  silhouetteUrl String     @map("silhouette_url") @db.VarChar(300)
+  ruleType      RuleType   @map("rule_type")
+  ruleValue     Json       @map("rule_value")
+  // Orden de la galería
+  order         Int        @unique
+
+  playerRewards PlayerReward[]
+
+  @@map("rewards")
+}
+
+model PlayerReward {
+  userId     String   @map("user_id") @db.Uuid
+  rewardId   String   @map("reward_id") @db.Uuid
+  unlockedAt DateTime @default(now()) @map("unlocked_at")
+  // false = la galería muestra "¡Nuevo!" hasta que el jugador la abre
+  seen       Boolean  @default(false)
+
+  reward Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@id([userId, rewardId])
+  @@map("player_rewards")
+}
+
+// Idempotencia de POST /internal/evaluations por sessionId
+model ProcessedEvaluation {
+  sessionId String   @id @map("session_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  response  Json
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@index([userId])
+  @@map("processed_evaluations")
+}

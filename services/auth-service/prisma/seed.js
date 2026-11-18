@@ -25,6 +25,15 @@ const demoSeedUser = {
   password: process.env.SEED_DEMO_PASSWORD ?? 'Demo1234',
 };
 
+const championSeedUser = {
+  id: SEED_USER_IDS.champion,
+  username: 'campeon',
+  email: 'campeon@deventure.dev',
+  role: 'player',
+  introSeen: true,
+  password: process.env.SEED_DEMO_PASSWORD ?? 'Demo1234',
+};
+
 async function upsertSeedUser({ password, ...seedUser }) {
   const passwordHash = await bcrypt.hash(password, SEED_BCRYPT_ROUNDS);
   const userData = { ...seedUser, usernameLower: seedUser.username.toLowerCase(), passwordHash };
@@ -34,7 +43,10 @@ async function upsertSeedUser({ password, ...seedUser }) {
 async function seedAuthUsers() {
   await upsertSeedUser(adminSeedUser);
   await upsertSeedUser(demoSeedUser);
-  logger.info(`Seed auth: ${adminSeedUser.username}, ${demoSeedUser.username}`);
+  await upsertSeedUser(championSeedUser);
+  logger.info(
+    `Seed auth: ${adminSeedUser.username}, ${demoSeedUser.username}, ${championSeedUser.username}`,
+  );
 }
 
 seedAuthUsers()

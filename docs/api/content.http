@@ -2,11 +2,10 @@
 ### Requiere el gateway (3000), auth-service (3001) y content-service (3002) corriendo, con el seed cargado.
 @gateway = http://localhost:3000
 @content = http://localhost:3002
-@internalToken = cambiar-por-otro-secreto-interno
-@whatIsAProgramLevel = 11000000-0000-4000-8000-000000000001
-@variablesLevel = 11000000-0000-4000-8000-000000000002
+@internalToken = dev-internal-token-deventure
+@whatIsAProgramLevel = 11000000-0000-4000-8000-000000000101
 @logicZone = 10000000-0000-4000-8000-000000000001
-@programDefinitionChallenge = 12000000-0000-4000-8000-000000000001
+@programDefinitionChallenge = 12000000-0000-4000-8000-000000010101
 
 ### Login para obtener el token (usuario del seed de auth)
 # @name login
@@ -49,8 +48,8 @@ Authorization: Bearer {{login.response.body.data.token}}
 GET {{content}}/internal/levels/{{whatIsAProgramLevel}}/summary
 x-internal-token: {{internalToken}}
 
-### Resumen del último nivel de la zona → nextLevel null
-GET {{content}}/internal/levels/{{variablesLevel}}/summary
+### Resumen del último nivel del juego (SQL, nivel 7) → nextLevel null, isLastOfZone true
+GET {{content}}/internal/levels/11000000-0000-4000-8000-000000000407/summary
 x-internal-token: {{internalToken}}
 
 ### Desafío CON solución (solo interno) → 200

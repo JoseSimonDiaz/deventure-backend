@@ -1,0 +1,108 @@
+### Probar con la extensión "REST Client" de VS Code (botón "Send Request" sobre cada pedido).
+### Requiere `npm run dev` con todos los servicios y los seeds cargados.
+@gateway = http://localhost:3000
+
+### Login como admin
+# @name admin
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{ "identifier": "admin", "password": "Admin1234" }
+
+### Login como jugador (para ver el 403)
+# @name player
+POST {{gateway}}/api/auth/login
+Content-Type: application/json
+
+{ "identifier": "demo", "password": "Demo1234" }
+
+### Jugador en la API de admin → 403
+GET {{gateway}}/api/admin/content/zones
+Authorization: Bearer {{player.response.body.data.token}}
+
+### Todas las zonas (incluye borradores y archivadas) → 200
+GET {{gateway}}/api/admin/content/zones
+Authorization: Bearer {{admin.response.body.data.token}}
+
+### Crear una zona en borrador → 201
+# @name zone
+POST {{gateway}}/api/admin/content/zones
+Authorization: Bearer {{admin.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "slug": "zona-de-prueba",
+  "name": "Zona de prueba",
+  "description": "Creada desde el panel",
+  "theorySummary": "## Teoría\n\nResumen de ejemplo."
+}
+
+### Crear un nivel en la zona → 201
+# @name level
+POST {{gateway}}/api/admin/content/zones/{{zone.response.body.data.id}}/levels
+Authorization: Bearer {{admin.response.body.data.token}}
+Content-Type: application/json
+
+{ "title": "Nivel de prueba" }
+
+### Crear un desafío (el body se valida según el tipo) → 201
+# @name challenge
+POST {{gateway}}/api/admin/content/levels/{{level.response.body.data.id}}/challenges
+Authorization: Bearer {{admin.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "type": "multiple_choice",
+  "language": "pseudo",
+  "statement": "¿Cuánto es 2 + 2?",
+  "payload": { "options": [{ "id": "a", "text": "4" }, { "id": "b", "text": "5" }] },
+  "solution": { "correctOptionId": "a" },
+  "explanation": "2 + 2 = 4",
+  "commonErrors": [{ "pattern": "^b$", "message": "Casi: contá de nuevo" }],
+  "hints": ["Contá con los dedos"]
+}
+
+### Probar el desafío con el validador real antes de publicarlo → 200
+POST {{gateway}}/api/admin/content/challenge-previews
+Authorization: Bearer {{admin.response.body.data.token}}
+Content-Type: application/json
+
+{
+  "challenge": {
+    "type": "multiple_choice",
+    "language": "pseudo",
+    "statement": "¿Cuánto es 2 + 2?",
+    "payload": { "options": [{ "id": "a", "text": "4" }, { "id": "b", "text": "5" }] },
+    "solution": { "correctOptionId": "a" },
+    "explanation": "2 + 2 = 4",
+    "commonErrors": [{ "pattern": "^b$", "message": "Casi: contá de nuevo" }],
+    "hints": []
+  },
+  "answer": { "type": "multiple_choice", "optionId": "b" }
+}
+
+### Publicar el nivel y la zona → 200
+PATCH {{gateway}}/api/admin/content/levels/{{level.response.body.data.id}}
+Authorization: Bearer {{admin.response.body.data.token}}
+Content-Type: application/json
+
+{ "isPublished": true }
+
+### Archivar la zona (no se borra) → 200
+PATCH {{gateway}}/api/admin/content/zones/{{zone.response.body.data.id}}
+Authorization: Bearer {{admin.response.body.data.token}}
+Content-Type: application/json
+
+{ "isArchived": true }
+
+### Borrar el desafío → 204
+DELETE {{gateway}}/api/admin/content/challenges/{{challenge.response.body.data.id}}
+Authorization: Bearer {{admin.response.body.data.token}}
+
+### Estadísticas (si un servicio no responde, ese bloque viene null y partial true) → 200
+GET {{gateway}}/api/admin/stats?from=2026-01-01
+Authorization: Bearer {{admin.response.body.data.token}}
+
+### Llamadas internas que fallaron definitivamente → 200
+GET {{gateway}}/api/admin/gameplay/pending-calls?status=failed
+Authorization: Bearer {{admin.response.body.data.token}}

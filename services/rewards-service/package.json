@@ -6,16 +6,28 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
+    "start:docker": "prisma migrate deploy && prisma db seed && node --import @deventure/service-kit/tracing src/index.js",
     "test": "vitest run --passWithNoTests",
-    "lint": "eslint ."
+    "test:contract": "vitest run tests/contract",
+    "lint": "eslint .",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@deventure/contracts": "*",
     "@deventure/service-kit": "*",
-    "zod": "^3.25.76"
+    "zod": "^3.25.76",
+    "@prisma/client": "6.19.3"
   },
   "devDependencies": {
     "supertest": "^7.1.4",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "prisma": "6.19.3"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }

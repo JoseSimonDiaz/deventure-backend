@@ -6,4 +6,5 @@ export const TEST_ENV = {
   JWT_SECRET: 'test-secret-de-al-menos-32-caracteres-xx',
   JWT_EXPIRES_IN: '24h',
   BCRYPT_ROUNDS: '4',
+  INTERNAL_TOKEN: 'test-internal-token',
 };

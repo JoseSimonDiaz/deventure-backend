@@ -20,6 +20,8 @@ const usernameTakenError = () =>
   new ConflictError('Ese nombre de usuario ya está en uso', { code: 'USERNAME_TAKEN' });
 const emailTakenError = () =>
   new ConflictError('Ese email ya está registrado', { code: 'EMAIL_TAKEN' });
+export const accountNotFoundError = () =>
+  new UnauthorizedError('La cuenta ya no existe', { code: 'ACCOUNT_NOT_FOUND' });
 const invalidCredentialsError = () =>
   new UnauthorizedError('Usuario o contraseña incorrectos', { code: 'INVALID_CREDENTIALS' });
 
@@ -36,6 +38,7 @@ export async function register({ username, email, password }) {
     usernameLower,
     email,
     passwordHash,
+    lastLoginAt: new Date(),
   });
 
   return { token: signToken(createdUser), user: createdUser };
@@ -74,7 +77,7 @@ export async function login({ identifier, password }, now = new Date()) {
   return { token: signToken(loggedInUser), user: loggedInUser };
 }
 
-function assertAccountNotLocked(user, now) {
+export function assertAccountNotLocked(user, now) {
   const isLocked = Boolean(user.lockedUntil) && user.lockedUntil > now;
   if (!isLocked) return;
 
@@ -87,7 +90,7 @@ function assertAccountNotLocked(user, now) {
   );
 }
 
-async function registerFailedLogin(user, now) {
+export async function registerFailedLogin(user, now) {
   const windowStart = user.failedLoginWindowStart;
   const isWindowExpired =
     !windowStart || now.getTime() - windowStart.getTime() > FAILED_LOGIN_WINDOW_MS;
@@ -109,7 +112,7 @@ async function registerFailedLogin(user, now) {
 
 export async function getMe(userId) {
   const user = await userRepository.findPublicById(userId);
-  if (!user) throw new UnauthorizedError('La cuenta ya no existe');
+  if (!user) throw accountNotFoundError();
   return user;
 }
 

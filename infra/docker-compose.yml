@@ -7,6 +7,12 @@ x-service: &service
   depends_on:
     postgres:
       condition: service_healthy
+    jaeger:
+      condition: service_started
+
+# Trazas distribuidas (DEV-45): `start:docker` carga el SDK de OpenTelemetry y exporta a Jaeger
+x-otel-env: &otel-env
+  OTEL_EXPORTER_OTLP_ENDPOINT: http://jaeger:4318
 
 services:
   postgres:
@@ -15,7 +21,7 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-deventure}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-deventure}
     ports:
-      - '5432:5432'
+      - '${POSTGRES_PORT:-5432}:5432'
     volumes:
       - pgdata:/var/lib/postgresql/data
       - ./postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -25,38 +31,57 @@ services:
       timeout: 5s
       retries: 10
 
+  jaeger:
+    image: jaegertracing/all-in-one:1.76.0
+    # UI en http://localhost:16686
+    ports:
+      - '16686:16686'
+    expose: ['4318']
+
   api-gateway:
     <<: *service
-    build: { context: .., dockerfile: services/api-gateway/Dockerfile }
+    build: { context: .., dockerfile: infra/service.Dockerfile, args: { SERVICE: api-gateway } }
     environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: api-gateway
       NODE_ENV: production
       PORT: 3000
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el .env de la raíz}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
       CORS_ORIGIN: http://localhost:5173
       AUTH_URL: http://auth-service:3001
       CONTENT_URL: http://content-service:3002
       GAMEPLAY_URL: http://gameplay-service:3003
       PROGRESS_URL: http://progress-service:3004
       REWARDS_URL: http://rewards-service:3005
+      ASSISTANT_URL: http://assistant-service:3006
     # Único servicio del backend expuesto al host
     ports:
       - '3000:3000'
 
   auth-service:
     <<: *service
-    build: { context: .., dockerfile: services/auth-service/Dockerfile }
+    build: { context: .., dockerfile: infra/service.Dockerfile, args: { SERVICE: auth-service } }
     environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: auth-service
       NODE_ENV: production
       PORT: 3001
       DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/auth_db?schema=public
       JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET en el .env de la raíz}
       INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
+      GAMEPLAY_URL: http://gameplay-service:3003
+      PROGRESS_URL: http://progress-service:3004
+      REWARDS_URL: http://rewards-service:3005
+      ASSISTANT_URL: http://assistant-service:3006
     expose: ['3001']
 
   content-service:
     <<: *service
-    build: { context: .., dockerfile: services/content-service/Dockerfile }
+    build: { context: .., dockerfile: infra/service.Dockerfile, args: { SERVICE: content-service } }
     environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: content-service
       NODE_ENV: production
       PORT: 3002
       DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/content_db?schema=public
@@ -65,21 +90,63 @@ services:
 
   gameplay-service:
     <<: *service
-    build: { context: .., dockerfile: services/gameplay-service/Dockerfile }
-    environment: { NODE_ENV: production, PORT: 3003, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    build:
+      { context: .., dockerfile: infra/service.Dockerfile, args: { SERVICE: gameplay-service } }
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: gameplay-service
+      NODE_ENV: production
+      PORT: 3003
+      DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/gameplay_db?schema=public
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
+      CONTENT_URL: http://content-service:3002
+      PROGRESS_URL: http://progress-service:3004
+      REWARDS_URL: http://rewards-service:3005
     expose: ['3003']
 
   progress-service:
     <<: *service
-    build: { context: .., dockerfile: services/progress-service/Dockerfile }
-    environment: { NODE_ENV: production, PORT: 3004, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    build:
+      { context: .., dockerfile: infra/service.Dockerfile, args: { SERVICE: progress-service } }
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: progress-service
+      NODE_ENV: production
+      PORT: 3004
+      DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/progress_db?schema=public
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
+      CONTENT_URL: http://content-service:3002
     expose: ['3004']
 
   rewards-service:
     <<: *service
-    build: { context: .., dockerfile: services/rewards-service/Dockerfile }
-    environment: { NODE_ENV: production, PORT: 3005, INTERNAL_TOKEN: '${INTERNAL_TOKEN}' }
+    build: { context: .., dockerfile: infra/service.Dockerfile, args: { SERVICE: rewards-service } }
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: rewards-service
+      NODE_ENV: production
+      PORT: 3005
+      DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/rewards_db?schema=public
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
+      CONTENT_URL: http://content-service:3002
+      PROGRESS_URL: http://progress-service:3004
     expose: ['3005']
+
+  assistant-service:
+    <<: *service
+    build:
+      { context: .., dockerfile: infra/service.Dockerfile, args: { SERVICE: assistant-service } }
+    environment:
+      <<: *otel-env
+      OTEL_SERVICE_NAME: assistant-service
+      NODE_ENV: production
+      PORT: 3006
+      DATABASE_URL: postgresql://${POSTGRES_USER:-deventure}:${POSTGRES_PASSWORD:-deventure}@postgres:5432/assistant_db?schema=public
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?Falta INTERNAL_TOKEN en el .env de la raíz}
+      CONTENT_URL: http://content-service:3002
+      GAMEPLAY_URL: http://gameplay-service:3003
+      AI_API_KEY: ${AI_API_KEY:-}
+    expose: ['3006']
 
   # web: se agrega cuando exista apps/web (DEV-01 frontend)
 

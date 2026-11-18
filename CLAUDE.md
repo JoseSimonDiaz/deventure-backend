@@ -16,13 +16,8 @@ proponer cambios de arquitectura. El código, los mensajes de error y los commit
 Lo más importante, que `npm run lint` hace cumplir en `services/**` y `packages/**`: **sin loops ni
 `map`/`filter`/`some`/`find`/`reduce`/`forEach`/`sort`** (resolverlo en la base o con `Map`/`Set`),
 **sin nombres de una letra**, **sin `console`**, sin `if` anidados y sin comparar contra
-<<<<<<< HEAD
 `null`/`undefined`. **Sin comentarios ni JSDoc** en el código JS (el repo está limpio: no
 volver a agregarlos).
-=======
-`null`/`undefined`. **No agregar comentarios ni JSDoc** en código nuevo; los existentes se quitan
-en un PR de limpieza aparte.
->>>>>>> 91d40d8 (Development (#1))
 
 Las observaciones abiertas de cada ticket viven en `.claude/reviews/DEV-XX.md`. Al trabajar un
 ticket, leer su archivo si existe.
@@ -40,6 +35,7 @@ npm run lint                     # ESLint (flat config de packages/eslint-config
 npm run format:check             # Prettier (CI falla si no está formateado)
 npm test                         # vitest en todos los workspaces (--passWithNoTests)
 
+npm run test:contract           # contratos /internal (progress, rewards, gameplay) con su esquema de test
 npm test -w @deventure/auth-service                       # un workspace
 npx vitest run tests/<archivo>.test.js (dentro del workspace) # un archivo
 npx vitest run -t "nombre del test" (dentro del workspace) # un test por nombre
@@ -68,7 +64,9 @@ npm run db:seed    -w @deventure/auth-service   # admin/Admin1234, demo/Demo1234
 - CI (`.github/workflows/ci.yml`) solo testea los workspaces que cambiaron; si cambia
   `packages/**`, `package.json` o el lockfile, testea todos. También valida cada
   `services/*/prisma/schema.prisma`. Al agregar un servicio o paquete nuevo hay que sumarlo a
-  los filtros y a la lista `ALL` de ese workflow.
+  los filtros y a la lista `ALL` de ese workflow, y copiar su `package.json` (y su
+  `schema.prisma`) en `infra/service.Dockerfile`, el Dockerfile único que usan todos los
+  servicios en `docker-compose.yml` (sin eso `npm ci` falla en el build).
 
 ## Arquitectura
 
@@ -119,13 +117,8 @@ acá y se reusa en `validate(...)` (backend) y `zodResolver(...)` (frontend).
 
 `routes → controllers → services → repositories`. Controllers solo traducen HTTP ↔ service; la
 lógica está en `services/`; solo `repositories/` usa `prisma`, y la consulta (`select` o
-<<<<<<< HEAD
 `$queryRaw`) devuelve la forma pública (ej. `PUBLIC_USER_SELECT` en `user.repository.js`).
 `src/db.js` exporta un único `PrismaClient` (auth omite `passwordHash`
-=======
-`$queryRaw`) devuelve la forma pública. `auth-service/src/mappers/user.mapper.js` es anterior a
-esta regla y está pendiente de reemplazo: no copiar ese patrón. `src/db.js` exporta un único `PrismaClient` (auth omite `passwordHash`
->>>>>>> 91d40d8 (Development (#1))
 por defecto en todas las consultas). Prisma está fijado en **6.19.3**.
 
 **Cliente de Prisma por servicio:** cada `schema.prisma` declara
@@ -141,10 +134,14 @@ Las rutas públicas de un servicio usan `requireUser` (vienen del gateway); las 
 
 ### Estado
 
-auth-service, api-gateway y content-service (DEV-02: lectura de zonas, niveles, teoría y los
-endpoints internos para gameplay) están implementados; gameplay, progress y rewards son
-esqueletos con solo `/health`. `apps/web` (React + Vite + Tailwind) todavía no existe aunque ya
-está en los workspaces y en la config de ESLint. `Dev-venture/` es un repo git aparte (backlog y
+Los 7 servicios están implementados (auth, content, gameplay, progress, rewards, assistant y el
+gateway): juego completo con 5 tipos de desafío, vidas, estrellas, pistas, teoría, desbloqueos,
+recompensas, panel admin, estadísticas, borrado de cuenta y reintento de llamadas internas
+(`startPendingCallsJob` de service-kit, usado por gameplay y auth). Los validadores de gameplay
+comparan en Postgres con las funciones `normalize_code`, `escape_regex` y `normalize_output` de su
+migración init. El contenido se carga con `services/content-service/prisma/seeds/*.js` (ids fijos
+derivados del orden: helpers `seedZoneId`/`seedLevelId` de contracts). El frontend vive en el repo
+aparte `deventure-front` (`apps/web` no existe). `Dev-venture/` es un repo git aparte (backlog y
 script de Trello), no forma parte del monorepo.
 
 ## Configuración de Claude en `.claude/`
