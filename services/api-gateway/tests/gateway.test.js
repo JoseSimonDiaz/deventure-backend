@@ -7,13 +7,29 @@ import { gatewayConfigSchema } from '../src/config.js';
 
 const SECRET = 'test-secret-de-al-menos-32-caracteres-xx';
 const USER_ID = '00000000-0000-4000-8000-000000000002';
+const DELETED_USER_ID = '00000000-0000-4000-8000-000000000099';
+const CURRENT_SESSION_VERSION = 2;
+
+const signTestToken = ({ userId = USER_ID, role = 'player', sessionVersion }, options = {}) =>
+  jwt.sign({ sub: userId, role, username: 'demo', ver: sessionVersion }, SECRET, {
+    algorithm: 'HS256',
+    ...options,
+  });
 
 const tokenFor = (role = 'player', options = {}) =>
-  jwt.sign({ sub: USER_ID, role, username: 'demo' }, SECRET, { algorithm: 'HS256', ...options });
+  signTestToken({ role, sessionVersion: CURRENT_SESSION_VERSION }, options);
 
 function startUpstream() {
   const upstream = express();
   upstream.use(express.json());
+  upstream.get('/internal/users/:userId/session', (req, res) => {
+    if (req.params.userId === DELETED_USER_ID) {
+      return res
+        .status(404)
+        .json({ error: { code: 'ACCOUNT_NOT_FOUND', message: 'La cuenta ya no existe' } });
+    }
+    res.json({ data: { sessionVersion: CURRENT_SESSION_VERSION } });
+  });
   upstream.all('/{*any}', (req, res) => {
     res.status(req.path.endsWith('/created') ? 201 : 200).json({
       data: { method: req.method, path: req.originalUrl, headers: req.headers, body: req.body },
@@ -33,6 +49,7 @@ const makeApp = (overrides = {}) =>
     gatewayConfigSchema.parse({
       NODE_ENV: 'test',
       JWT_SECRET: SECRET,
+      INTERNAL_TOKEN: 'test-internal-token',
       AUTH_URL: upstreamUrl,
       CONTENT_URL: upstreamUrl,
       GAMEPLAY_URL: upstreamUrl,
@@ -109,6 +126,35 @@ describe('autenticación', () => {
       .set('authorization', `Bearer ${expired}`);
     expect(res.status).toBe(401);
     expect(res.body.error.message).toBe('La sesión expiró');
+  });
+
+  it('token emitido antes de cambiar la contraseña → 401 SESSION_REVOKED', async () => {
+    const staleToken = signTestToken({ sessionVersion: CURRENT_SESSION_VERSION - 1 });
+    const res = await request(app)
+      .get('/api/progress/me')
+      .set('authorization', `Bearer ${staleToken}`);
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('SESSION_REVOKED');
+  });
+
+  it('token de una cuenta borrada → 401 SESSION_REVOKED', async () => {
+    const deletedUserToken = signTestToken({
+      userId: DELETED_USER_ID,
+      sessionVersion: CURRENT_SESSION_VERSION,
+    });
+    const res = await request(app)
+      .get('/api/progress/me')
+      .set('authorization', `Bearer ${deletedUserToken}`);
+    expect(res.status).toBe(401);
+    expect(res.body.error.code).toBe('SESSION_REVOKED');
+  });
+
+  it('token sin versión de sesión → 401', async () => {
+    const legacyToken = jwt.sign({ sub: USER_ID, role: 'player', username: 'demo' }, SECRET);
+    const res = await request(app)
+      .get('/api/progress/me')
+      .set('authorization', `Bearer ${legacyToken}`);
+    expect(res.status).toBe(401);
   });
 
   it('token válido → reenvía con x-user-id / x-user-role / x-correlation-id y sin Authorization', async () => {
@@ -227,5 +273,51 @@ describe('CORS y rate limit', () => {
     const res = await request(limited).post('/api/auth/login').send({});
     expect(res.status).toBe(429);
     expect(res.body.error.code).toBe('TOO_MANY_REQUESTS');
+  });
+
+  it('login: cambiar X-Forwarded-For no saltea el rate limit', async () => {
+    const limited = makeApp({ RATE_LIMIT_AUTH_MAX: '2' });
+    const loginFrom = (spoofedIp) =>
+      request(limited).post('/api/auth/login').set('x-forwarded-for', spoofedIp).send({});
+    await loginFrom('203.0.113.1');
+    await loginFrom('203.0.113.2');
+    const res = await loginFrom('203.0.113.3');
+    expect(res.status).toBe(429);
+  });
+});
+
+describe('GET /api/admin/stats', () => {
+  it('player → 403', async () => {
+    const res = await request(app)
+      .get('/api/admin/stats')
+      .set('authorization', `Bearer ${tokenFor('player')}`);
+    expect(res.status).toBe(403);
+  });
+
+  it('admin → junta las estadísticas de auth, gameplay y progress y reenvía el rango', async () => {
+    const res = await request(app)
+      .get('/api/admin/stats?from=2026-01-01')
+      .set('authorization', `Bearer ${tokenFor('admin')}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.partial).toBe(false);
+    expect(res.body.data.users.path).toBe('/internal/stats/users?from=2026-01-01');
+    expect(res.body.data.gameplay.headers['x-internal-token']).toBe('test-internal-token');
+  });
+
+  it('un servicio caído → ese bloque en null y partial = true', async () => {
+    const partialApp = makeApp({ PROGRESS_URL: 'http://127.0.0.1:1' });
+    const res = await request(partialApp)
+      .get('/api/admin/stats')
+      .set('authorization', `Bearer ${tokenFor('admin')}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.progress).toBeNull();
+    expect(res.body.data.partial).toBe(true);
+  });
+
+  it('rango inválido → 400', async () => {
+    const res = await request(app)
+      .get('/api/admin/stats?from=no-es-fecha')
+      .set('authorization', `Bearer ${tokenFor('admin')}`);
+    expect(res.status).toBe(400);
   });
 });

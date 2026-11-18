@@ -1,6 +1,7 @@
 import { createService } from '@deventure/service-kit';
 import { prisma } from './db.js';
 import { authRouter } from './routes/auth.routes.js';
+import { internalRouter } from './routes/internal.routes.js';
 
 export function buildApp() {
   const app = createService({
@@ -9,6 +10,7 @@ export function buildApp() {
   });
 
   app.use('/auth', authRouter);
+  app.use('/internal', internalRouter);
 
   return app.finalize();
 }

@@ -43,6 +43,7 @@ export function registerProxies(app, config) {
   registerServiceRoutes(app, { name: 'gameplay', target: config.GAMEPLAY_URL, timeoutMs });
   registerServiceRoutes(app, { name: 'progress', target: config.PROGRESS_URL, timeoutMs });
   registerServiceRoutes(app, { name: 'rewards', target: config.REWARDS_URL, timeoutMs });
+  registerServiceRoutes(app, { name: 'assistant', target: config.ASSISTANT_URL, timeoutMs });
 }
 
 function registerServiceRoutes(app, { name, target, timeoutMs }) {

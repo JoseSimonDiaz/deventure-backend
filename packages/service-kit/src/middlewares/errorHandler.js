@@ -5,6 +5,7 @@ import { logger } from '../logger.js';
 const PRISMA_KNOWN_ERRORS = new Map([
   ['P2002', { status: 409, code: 'CONFLICT', message: 'El recurso ya existe' }],
   ['P2025', { status: 404, code: 'NOT_FOUND', message: 'Recurso no encontrado' }],
+  ['P2003', { status: 404, code: 'NOT_FOUND', message: 'El recurso relacionado no existe' }],
 ]);
 
 const BODY_PARSER_ERRORS = new Map([

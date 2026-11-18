@@ -37,9 +37,10 @@ jobs:
             services/gameplay-service: 'services/gameplay-service/**'
             services/progress-service: 'services/progress-service/**'
             services/rewards-service: 'services/rewards-service/**'
+            services/assistant-service: 'services/assistant-service/**'
       - id: list
         run: |
-          ALL='["packages/service-kit","packages/contracts","services/api-gateway","services/auth-service","services/content-service","services/gameplay-service","services/progress-service","services/rewards-service"]'
+          ALL='["packages/service-kit","packages/contracts","services/api-gateway","services/auth-service","services/content-service","services/gameplay-service","services/progress-service","services/rewards-service","services/assistant-service"]'
           if [ "${{ steps.filter.outputs.shared }}" = "true" ]; then
             echo "workspaces=$ALL" >> "$GITHUB_OUTPUT"
           else

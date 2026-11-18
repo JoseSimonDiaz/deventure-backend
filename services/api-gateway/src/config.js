@@ -5,6 +5,10 @@ export const gatewayConfigSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET tiene que tener al menos 32 caracteres'),
+  INTERNAL_TOKEN: z
+    .string()
+    .min(1, 'INTERNAL_TOKEN es obligatorio para validar sesiones y leer estadísticas'),
+  STATS_TIMEOUT_MS: z.coerce.number().int().positive().default(3000),
   CORS_ORIGIN: z
     .string()
     .default('http://localhost:5173')
@@ -14,6 +18,7 @@ export const gatewayConfigSchema = z.object({
   GAMEPLAY_URL: z.string().url().default('http://localhost:3003'),
   PROGRESS_URL: z.string().url().default('http://localhost:3004'),
   REWARDS_URL: z.string().url().default('http://localhost:3005'),
+  ASSISTANT_URL: z.string().url().default('http://localhost:3006'),
   RATE_LIMIT_AUTH_MAX: z.coerce.number().int().positive().default(10),
   RATE_LIMIT_GLOBAL_MAX: z.coerce.number().int().positive().default(300),
   PROXY_TIMEOUT_MS: z.coerce.number().int().positive().default(10000),

@@ -275,7 +275,11 @@ El código del jugador **nunca se compila ni se ejecuta**: se valida comparando 
   - Si la IA no responde en 5 s, devuelve la siguiente pista del desafío como respuesta de
     respaldo.
   - La API key vive solo en el backend.
-  - No es un chat libre fuera de los niveles, no tiene streaming y no muestra historial.
+  - No tiene streaming y no muestra historial.
+  - **Oráculo de Björn:** fuera de los niveles, el botón de la runa ᚨ del mapa abre una consulta
+    libre de programación (`POST /api/assistant/oracle-questions`). Máximo 10 consultas por
+    jugador por día (hora de Argentina; la 11ª: 429). No resuelve desafíos del juego. Si la IA no
+    responde, devuelve 503 y la consulta no se cuenta.
 
 ### 9.7 Resultado del nivel
 

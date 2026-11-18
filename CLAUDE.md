@@ -35,6 +35,7 @@ npm run lint                     # ESLint (flat config de packages/eslint-config
 npm run format:check             # Prettier (CI falla si no está formateado)
 npm test                         # vitest en todos los workspaces (--passWithNoTests)
 
+npm run test:contract           # contratos /internal (progress, rewards, gameplay) con su esquema de test
 npm test -w @deventure/auth-service                       # un workspace
 npx vitest run tests/<archivo>.test.js (dentro del workspace) # un archivo
 npx vitest run -t "nombre del test" (dentro del workspace) # un test por nombre
@@ -63,7 +64,9 @@ npm run db:seed    -w @deventure/auth-service   # admin/Admin1234, demo/Demo1234
 - CI (`.github/workflows/ci.yml`) solo testea los workspaces que cambiaron; si cambia
   `packages/**`, `package.json` o el lockfile, testea todos. También valida cada
   `services/*/prisma/schema.prisma`. Al agregar un servicio o paquete nuevo hay que sumarlo a
-  los filtros y a la lista `ALL` de ese workflow.
+  los filtros y a la lista `ALL` de ese workflow, y copiar su `package.json` (y su
+  `schema.prisma`) en `infra/service.Dockerfile`, el Dockerfile único que usan todos los
+  servicios en `docker-compose.yml` (sin eso `npm ci` falla en el build).
 
 ## Arquitectura
 
@@ -131,10 +134,14 @@ Las rutas públicas de un servicio usan `requireUser` (vienen del gateway); las 
 
 ### Estado
 
-auth-service, api-gateway y content-service (DEV-02: lectura de zonas, niveles, teoría y los
-endpoints internos para gameplay) están implementados; gameplay, progress y rewards son
-esqueletos con solo `/health`. `apps/web` (React + Vite + Tailwind) todavía no existe aunque ya
-está en los workspaces y en la config de ESLint. `Dev-venture/` es un repo git aparte (backlog y
+Los 7 servicios están implementados (auth, content, gameplay, progress, rewards, assistant y el
+gateway): juego completo con 5 tipos de desafío, vidas, estrellas, pistas, teoría, desbloqueos,
+recompensas, panel admin, estadísticas, borrado de cuenta y reintento de llamadas internas
+(`startPendingCallsJob` de service-kit, usado por gameplay y auth). Los validadores de gameplay
+comparan en Postgres con las funciones `normalize_code`, `escape_regex` y `normalize_output` de su
+migración init. El contenido se carga con `services/content-service/prisma/seeds/*.js` (ids fijos
+derivados del orden: helpers `seedZoneId`/`seedLevelId` de contracts). El frontend vive en el repo
+aparte `deventure-front` (`apps/web` no existe). `Dev-venture/` es un repo git aparte (backlog y
 script de Trello), no forma parte del monorepo.
 
 ## Configuración de Claude en `.claude/`

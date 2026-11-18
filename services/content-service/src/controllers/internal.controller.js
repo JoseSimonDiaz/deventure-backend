@@ -12,4 +12,15 @@ export const internalController = {
     const challenge = await contentService.getChallengeWithSolution(challengeId);
     res.json({ data: challenge });
   },
+
+  async getZonesStructure(_req, res) {
+    const zonesStructure = await contentService.getZonesStructure();
+    res.json({ data: zonesStructure });
+  },
+
+  async getHint(req, res) {
+    const { challengeId, hintOrder } = req.params;
+    const hint = await contentService.getHint(challengeId, hintOrder);
+    res.json({ data: hint });
+  },
 };
