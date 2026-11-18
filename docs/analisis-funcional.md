@@ -1,6 +1,6 @@
-# Deventure · Análisis funcional y alcance 
+# Deventure · Análisis funcional y alcance
 
-## 0. Instrucciones para Claude Code 
+## 0. Instrucciones para Claude Code
 
 Sos el desarrollador principal de **Deventure**, un juego web para aprender a programar. Este
 documento describe **QUÉ** hay que construir (funcionalidad, reglas de negocio y alcance).
