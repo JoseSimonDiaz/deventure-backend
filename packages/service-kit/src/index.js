@@ -17,3 +17,5 @@ export { correlationId, CORRELATION_HEADER } from './middlewares/correlationId.j
 export { validate } from './middlewares/validate.js';
 export { requireInternalToken, INTERNAL_TOKEN_HEADER } from './middlewares/requireInternalToken.js';
 export { requireUser, requireRole } from './middlewares/requireUser.js';
+export { createInternalClient } from './internalClient.js';
+export { startPendingCallsJob, PENDING_CALLS_MAX_ATTEMPTS } from './pendingCallsJob.js';

@@ -5,6 +5,8 @@ const levelNotFoundError = () =>
   new NotFoundError('El nivel no existe o no está publicado', { code: 'LEVEL_NOT_FOUND' });
 const zoneNotFoundError = () =>
   new NotFoundError('La zona no existe o no está publicada', { code: 'ZONE_NOT_FOUND' });
+const noMoreHintsError = () =>
+  new NotFoundError('No hay más pistas para este desafío', { code: 'NO_MORE_HINTS' });
 const challengeNotFoundError = () =>
   new NotFoundError('El desafío no existe', { code: 'CHALLENGE_NOT_FOUND' });
 
@@ -34,4 +36,14 @@ export async function getChallengeWithSolution(challengeId) {
   const challenge = await contentRepository.findChallengeWithSolution(challengeId);
   if (!challenge) throw challengeNotFoundError();
   return challenge;
+}
+
+export function getZonesStructure() {
+  return contentRepository.findPublishedZonesStructure();
+}
+
+export async function getHint(challengeId, hintOrder) {
+  const hint = await contentRepository.findHint(challengeId, hintOrder);
+  if (!hint) throw noMoreHintsError();
+  return hint;
 }

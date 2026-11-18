@@ -1,0 +1,138 @@
+// gameplay-service · base gameplay_db (puerto 3003) · Prisma 6.19.3
+// Dueño de las sesiones de juego: el servidor decide vidas, aciertos y desafío actual (RN-15).
+// Los validadores comparan en Postgres con las funciones normalize_code, escape_regex y
+// normalize_output (definidas en la migración init). La solución nunca se guarda acá: se pide a
+// content por /internal en cada intento.
+// userId, levelId, zoneId y challengeId son ids de otros servicios: uuid sin foreign key.
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma-client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum SessionStatus {
+  in_progress
+  won
+  lost
+  abandoned
+
+  @@map("session_status")
+}
+
+// Destinos de las llamadas internas que se reintentan (DEV-44)
+enum InternalTarget {
+  progress
+  rewards
+
+  @@map("internal_target")
+}
+
+enum HttpMethod {
+  POST
+  DELETE
+
+  @@map("http_method")
+}
+
+enum PendingCallStatus {
+  pending
+  done
+  failed
+
+  @@map("pending_call_status")
+}
+
+model GameSession {
+  id           String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId       String        @map("user_id") @db.Uuid
+  levelId      String        @map("level_id") @db.Uuid
+  zoneId       String        @map("zone_id") @db.Uuid
+  // Orden fijo de los desafíos, copiado de content al crear la sesión
+  challengeIds String[]      @map("challenge_ids") @db.Uuid
+  currentIndex Int           @default(0) @map("current_index")
+  initialLives Int           @map("initial_lives")
+  livesLeft    Int           @map("lives_left")
+  hintsUsed    Int           @default(0) @map("hints_used")
+  status       SessionStatus @default(in_progress)
+  // Estrellas = vidas restantes al ganar (RN-19)
+  stars        Int?
+  durationMs   Int?          @map("duration_ms")
+  // Copiados del resumen del nivel para armar la pantalla de resultado sin volver a pedirlo
+  nextLevelId  String?       @map("next_level_id") @db.Uuid
+  isLastOfZone Boolean       @map("is_last_of_zone")
+
+  startedAt     DateTime  @default(now()) @map("started_at")
+  // Anti-trampas (RN-48): 1 s mínimo entre intentos
+  lastAttemptAt DateTime? @map("last_attempt_at")
+  finishedAt    DateTime? @map("finished_at")
+
+  attempts     Attempt[]
+  hintRequests HintRequest[]
+
+  @@index([userId, levelId])
+  // Job que pasa a abandoned las sesiones abiertas hace más de 2 horas (RN-23)
+  @@index([status, startedAt])
+  @@index([levelId, status])
+  @@map("game_sessions")
+}
+
+model Attempt {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sessionId      String   @map("session_id") @db.Uuid
+  challengeId    String   @map("challenge_id") @db.Uuid
+  // Posición del desafío en la sesión: base de "correctas al primer intento"
+  challengeIndex Int      @map("challenge_index")
+  answer         Json
+  isCorrect      Boolean  @map("is_correct")
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  session GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, challengeIndex])
+  @@index([challengeId, isCorrect])
+  @@map("attempts")
+}
+
+// Pistas pedidas por sesión y desafío: se entregan de a una y en orden (RN-29)
+model HintRequest {
+  sessionId   String   @map("session_id") @db.Uuid
+  challengeId String   @map("challenge_id") @db.Uuid
+  order       Int
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  session GameSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@id([sessionId, challengeId, order])
+  @@map("hint_requests")
+}
+
+// Llamadas a progress y rewards que fallaron tras los reintentos del cliente (DEV-44).
+// Misma forma que la tabla de auth-service para usar el job compartido de service-kit.
+model PendingInternalCall {
+  id            String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  target        InternalTarget
+  method        HttpMethod
+  path          String            @db.VarChar(255)
+  body          Json?
+  sessionId     String            @map("session_id") @db.Uuid
+  // Para borrar las llamadas pendientes del jugador cuando elimina su cuenta (DEV-09)
+  userId        String            @map("user_id") @db.Uuid
+  correlationId String?           @map("correlation_id")
+  attempts      Int               @default(0)
+  nextRetryAt   DateTime          @default(now()) @map("next_retry_at")
+  lastError     String?           @map("last_error")
+  status        PendingCallStatus @default(pending)
+  createdAt     DateTime          @default(now()) @map("created_at")
+  updatedAt     DateTime          @updatedAt @map("updated_at")
+
+  @@unique([target, sessionId])
+  @@index([status, nextRetryAt])
+  @@index([userId])
+  @@map("pending_internal_calls")
+}

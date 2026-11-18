@@ -1,4 +1,8 @@
-import { challengeIdParamsSchema, levelIdParamsSchema } from '@deventure/contracts';
+import {
+  challengeIdParamsSchema,
+  hintParamsSchema,
+  levelIdParamsSchema,
+} from '@deventure/contracts';
 import { requireInternalToken, validate } from '@deventure/service-kit';
 import { Router } from 'express';
 import { internalController } from '../controllers/internal.controller.js';
@@ -16,4 +20,10 @@ internalRouter.get(
   '/challenges/:challengeId',
   validate({ params: challengeIdParamsSchema }),
   internalController.getChallenge,
+);
+internalRouter.get('/zones/structure', internalController.getZonesStructure);
+internalRouter.get(
+  '/challenges/:challengeId/hints/:hintOrder',
+  validate({ params: hintParamsSchema }),
+  internalController.getHint,
 );

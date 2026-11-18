@@ -1,25 +1,19 @@
 import { rateLimit } from 'express-rate-limit';
 
-const tooManyRequests = (_req, res) => {
-  res.status(429).json({
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const TOO_MANY_REQUESTS_STATUS = 429;
+
+const rejectTooManyRequests = (_req, res) => {
+  res.status(TOO_MANY_REQUESTS_STATUS).json({
     error: { code: 'TOO_MANY_REQUESTS', message: 'Demasiados pedidos. Esperá un minuto.' },
   });
 };
 
-export const globalLimiter = (max) =>
+export const createRateLimiter = (maxRequestsPerWindow) =>
   rateLimit({
-    windowMs: 60_000,
-    limit: max,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+    limit: maxRequestsPerWindow,
     standardHeaders: 'draft-8',
     legacyHeaders: false,
-    handler: tooManyRequests,
-  });
-
-export const authLimiter = (max) =>
-  rateLimit({
-    windowMs: 60_000,
-    limit: max,
-    standardHeaders: 'draft-8',
-    legacyHeaders: false,
-    handler: tooManyRequests,
+    handler: rejectTooManyRequests,
   });

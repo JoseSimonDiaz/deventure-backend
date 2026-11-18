@@ -9,5 +9,10 @@ export const config = loadConfig(
     JWT_SECRET: z.string().min(32, 'JWT_SECRET tiene que tener al menos 32 caracteres'),
     JWT_EXPIRES_IN: z.string().default('24h'),
     BCRYPT_ROUNDS: z.coerce.number().int().min(4).max(14).default(10),
+    INTERNAL_TOKEN: z.string().min(1, 'INTERNAL_TOKEN es obligatorio para las rutas /internal'),
+    GAMEPLAY_URL: z.string().url().default('http://localhost:3003'),
+    PROGRESS_URL: z.string().url().default('http://localhost:3004'),
+    REWARDS_URL: z.string().url().default('http://localhost:3005'),
+    ASSISTANT_URL: z.string().url().default('http://localhost:3006'),
   }),
 );

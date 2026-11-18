@@ -1,0 +1,54 @@
+// assistant-service · base assistant_db (puerto 3006) · Prisma 6.19.3
+// Asistente IA que orienta sin dar la solución (RN-32): máximo 10 consultas por jugador y nivel.
+// Si la IA no responde en 5 s (o no hay API key), responde con la pista siguiente del desafío.
+// El oráculo del mapa responde preguntas libres de programación: máximo 10 por jugador y día.
+// userId, sessionId, levelId y challengeId son ids de otros servicios: uuid sin foreign key.
+
+generator client {
+  provider      = "prisma-client-js"
+  output        = "../generated/prisma-client"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AnswerSource {
+  ai
+  hint
+
+  @@map("answer_source")
+}
+
+model AssistantQuery {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String       @map("user_id") @db.Uuid
+  sessionId   String       @map("session_id") @db.Uuid
+  levelId     String       @map("level_id") @db.Uuid
+  challengeId String       @map("challenge_id") @db.Uuid
+  // 1 a 10 por jugador y nivel; el índice único impide pasarse del límite con pedidos simultáneos
+  queryNumber Int          @map("query_number")
+  question    String
+  answer      String
+  source      AnswerSource
+  createdAt   DateTime     @default(now()) @map("created_at")
+
+  @@unique([userId, levelId, queryNumber])
+  @@map("assistant_queries")
+}
+
+model OracleQuery {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  // día en hora de Argentina; el límite diario se cuenta por jugador y día
+  queryDay    DateTime @map("query_day") @db.Date
+  queryNumber Int      @map("query_number")
+  question    String
+  answer      String
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@unique([userId, queryDay, queryNumber])
+  @@map("oracle_queries")
+}

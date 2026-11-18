@@ -13,7 +13,6 @@ export function createService({ name, version = '1.0.0', healthCheck, json = tru
   const logger = createLogger(name);
 
   app.disable('x-powered-by');
-  app.set('trust proxy', 1);
   app.locals.logger = logger;
 
   app.use(helmet());

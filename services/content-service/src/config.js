@@ -7,5 +7,6 @@ export const config = loadConfig(
     PORT: z.coerce.number().int().positive().default(3002),
     DATABASE_URL: z.string().url(),
     INTERNAL_TOKEN: z.string().min(1, 'INTERNAL_TOKEN es obligatorio para las rutas /internal'),
+    GAMEPLAY_URL: z.string().url().default('http://localhost:3003'),
   }),
 );

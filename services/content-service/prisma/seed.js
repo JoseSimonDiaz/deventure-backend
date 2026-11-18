@@ -1,124 +1,119 @@
-import { SEED_CONTENT_IDS } from '@deventure/contracts';
 import { logger } from '@deventure/service-kit';
-import {
-  ChallengeLanguage,
-  ChallengeType,
-  PrismaClient,
-} from '../generated/prisma-client/index.js';
+import { PrismaClient } from '../generated/prisma-client/index.js';
+import { logicZone } from './seeds/01-logica-basica.js';
+import { csharpZone } from './seeds/02-csharp-basico.js';
+import { oopZone } from './seeds/03-poo-csharp.js';
+import { sqlZone } from './seeds/04-sql.js';
 
 const prisma = new PrismaClient();
 
-const logicZone = {
-  id: SEED_CONTENT_IDS.logicZone,
-  slug: 'logica-basica',
-  name: 'Lógica básica',
-  description: 'Tus primeros pasos: qué es un programa, variables, tipos, operadores y decisiones.',
-  order: 1,
-  videoUrl: null,
-  theorySummary:
-    'Un programa es una lista de instrucciones que la computadora sigue en orden, como una receta. Si cambiás el orden, cambia el resultado.',
-  isPublished: true,
-};
+const zonesSeed = JSON.stringify([logicZone, csharpZone, oopZone, sqlZone]);
+const ZONE_LANGUAGES = JSON.stringify({ 1: 'pseudo', 2: 'csharp', 3: 'csharp', 4: 'sql' });
 
-const whatIsAProgramLevel = {
-  id: SEED_CONTENT_IDS.whatIsAProgramLevel,
-  zoneId: SEED_CONTENT_IDS.logicZone,
-  order: 1,
-  title: '¿Qué es un programa?',
-  initialLives: 3,
-  isPublished: true,
-};
+const upsertZones = prisma.$executeRaw`
+  INSERT INTO zones (
+    id, slug, name, description, "order", video_url, theory_summary, is_published, updated_at
+  )
+  SELECT
+    ('10000000-0000-4000-8000-' || lpad(zone_seed."order"::text, 12, '0'))::uuid,
+    zone_seed.slug, zone_seed.name, zone_seed.description, zone_seed."order",
+    zone_seed."videoUrl", zone_seed."theorySummary", true, now()
+  FROM jsonb_to_recordset(${zonesSeed}::jsonb) AS zone_seed(
+    "order" int, slug text, name text, description text, "videoUrl" text, "theorySummary" text
+  )
+  ON CONFLICT (id) DO UPDATE SET
+    slug = EXCLUDED.slug,
+    name = EXCLUDED.name,
+    description = EXCLUDED.description,
+    "order" = EXCLUDED."order",
+    video_url = EXCLUDED.video_url,
+    theory_summary = EXCLUDED.theory_summary,
+    is_published = true,
+    archived_at = NULL,
+    updated_at = now()
+`;
 
-const variablesLevel = {
-  id: SEED_CONTENT_IDS.variablesLevel,
-  zoneId: SEED_CONTENT_IDS.logicZone,
-  order: 2,
-  title: 'Variables',
-  initialLives: 3,
-  isPublished: true,
-};
+const upsertLevels = prisma.$executeRaw`
+  INSERT INTO levels (id, zone_id, "order", title, initial_lives, is_published, updated_at)
+  SELECT
+    ('11000000-0000-4000-8000-'
+      || lpad(((zone.data ->> 'order')::int * 100 + level.position)::text, 12, '0'))::uuid,
+    ('10000000-0000-4000-8000-' || lpad(zone.data ->> 'order', 12, '0'))::uuid,
+    level.position,
+    level.data ->> 'title',
+    3,
+    true,
+    now()
+  FROM jsonb_array_elements(${zonesSeed}::jsonb) AS zone(data),
+       jsonb_array_elements(zone.data -> 'levels') WITH ORDINALITY AS level(data, position)
+  ON CONFLICT (id) DO UPDATE SET
+    title = EXCLUDED.title,
+    "order" = EXCLUDED."order",
+    is_published = true,
+    updated_at = now()
+`;
 
-const programDefinitionChallenge = {
-  id: SEED_CONTENT_IDS.programDefinitionChallenge,
-  levelId: SEED_CONTENT_IDS.whatIsAProgramLevel,
-  order: 1,
-  type: ChallengeType.multiple_choice,
-  language: ChallengeLanguage.pseudo,
-  statement: '¿Qué es un programa?',
-  payload: {
-    options: [
-      { id: 'instructions', text: 'Una lista de instrucciones que la computadora sigue en orden' },
-      { id: 'screen', text: 'La pantalla de la computadora' },
-      { id: 'internet', text: 'Una página de internet' },
-    ],
-  },
-  solution: { correctOptionId: 'instructions' },
-  explanation:
-    'Un programa es una lista de instrucciones. La computadora las ejecuta una por una, en el orden en que están escritas.',
-};
+const upsertChallenges = prisma.$executeRaw`
+  INSERT INTO challenges (
+    id, level_id, "order", type, language, statement, payload, solution, explanation,
+    common_errors, updated_at
+  )
+  SELECT
+    ('12000000-0000-4000-8000-' || lpad(
+      (((zone.data ->> 'order')::int * 100 + level.position) * 100 + challenge.position)::text,
+      12, '0'))::uuid,
+    ('11000000-0000-4000-8000-'
+      || lpad(((zone.data ->> 'order')::int * 100 + level.position)::text, 12, '0'))::uuid,
+    challenge.position,
+    (challenge.data ->> 'type')::challenge_type,
+    (${ZONE_LANGUAGES}::jsonb ->> (zone.data ->> 'order'))::challenge_language,
+    challenge.data ->> 'statement',
+    challenge.data -> 'payload',
+    challenge.data -> 'solution',
+    challenge.data ->> 'explanation',
+    COALESCE(challenge.data -> 'commonErrors', '[]'),
+    now()
+  FROM jsonb_array_elements(${zonesSeed}::jsonb) AS zone(data),
+       jsonb_array_elements(zone.data -> 'levels') WITH ORDINALITY AS level(data, position),
+       jsonb_array_elements(level.data -> 'challenges') WITH ORDINALITY AS challenge(data, position)
+  ON CONFLICT (id) DO UPDATE SET
+    "order" = EXCLUDED."order",
+    type = EXCLUDED.type,
+    language = EXCLUDED.language,
+    statement = EXCLUDED.statement,
+    payload = EXCLUDED.payload,
+    solution = EXCLUDED.solution,
+    explanation = EXCLUDED.explanation,
+    common_errors = EXCLUDED.common_errors,
+    updated_at = now()
+`;
 
-const instructionOrderChallenge = {
-  id: SEED_CONTENT_IDS.instructionOrderChallenge,
-  levelId: SEED_CONTENT_IDS.whatIsAProgramLevel,
-  order: 2,
-  type: ChallengeType.multiple_choice,
-  language: ChallengeLanguage.pseudo,
-  statement:
-    'Björn quiere zarpar con su barco. ¿Cuál es el orden correcto?\n1. Subir al barco\n2. Remar\n3. Desatar la cuerda',
-  payload: {
-    options: [
-      { id: 'one-three-two', text: '1, 3, 2' },
-      { id: 'two-one-three', text: '2, 1, 3' },
-      { id: 'one-two-three', text: '1, 2, 3' },
-    ],
-  },
-  solution: { correctOptionId: 'one-three-two' },
-  explanation:
-    'Primero sube al barco, después desata la cuerda y recién ahí puede remar. En un programa el orden de las instrucciones importa.',
-};
-
-const variableDefinitionChallenge = {
-  id: SEED_CONTENT_IDS.variableDefinitionChallenge,
-  levelId: SEED_CONTENT_IDS.variablesLevel,
-  order: 1,
-  type: ChallengeType.multiple_choice,
-  language: ChallengeLanguage.pseudo,
-  statement: '¿Para qué sirve una variable?',
-  payload: {
-    options: [
-      { id: 'store-value', text: 'Para guardar un dato y usarlo después' },
-      { id: 'turn-off', text: 'Para apagar la computadora' },
-    ],
-  },
-  solution: { correctOptionId: 'store-value' },
-  explanation:
-    'Una variable es como un cofre con nombre: guardás un dato (la edad de un vikingo, su puntaje) y lo usás cuando lo necesitás.',
-};
-
-const upsertById = (modelName, data) =>
-  prisma[modelName].upsert({ where: { id: data.id }, update: data, create: data });
-
-const upsertHint = (challengeId, order, text) =>
-  prisma.hint.upsert({
-    where: { challengeId_order: { challengeId, order } },
-    update: { text },
-    create: { challengeId, order, text },
-  });
+const upsertHints = prisma.$executeRaw`
+  INSERT INTO hints (id, challenge_id, "order", text)
+  SELECT
+    gen_random_uuid(),
+    ('12000000-0000-4000-8000-' || lpad(
+      (((zone.data ->> 'order')::int * 100 + level.position) * 100 + challenge.position)::text,
+      12, '0'))::uuid,
+    hint.position,
+    hint.text
+  FROM jsonb_array_elements(${zonesSeed}::jsonb) AS zone(data),
+       jsonb_array_elements(zone.data -> 'levels') WITH ORDINALITY AS level(data, position),
+       jsonb_array_elements(level.data -> 'challenges') WITH ORDINALITY AS challenge(data, position),
+       jsonb_array_elements_text(challenge.data -> 'hints') WITH ORDINALITY AS hint(text, position)
+  ON CONFLICT (challenge_id, "order") DO UPDATE SET text = EXCLUDED.text
+`;
 
 async function seedContent() {
-  await prisma.$transaction([
-    upsertById('zone', logicZone),
-    upsertById('level', whatIsAProgramLevel),
-    upsertById('level', variablesLevel),
-    upsertById('challenge', programDefinitionChallenge),
-    upsertById('challenge', instructionOrderChallenge),
-    upsertById('challenge', variableDefinitionChallenge),
-    upsertHint(programDefinitionChallenge.id, 1, 'Pensá en una receta de cocina.'),
-    upsertHint(programDefinitionChallenge.id, 2, 'Una receta es una lista de pasos en orden.'),
-    upsertHint(instructionOrderChallenge.id, 1, '¿Se puede remar si el barco sigue atado?'),
-    upsertHint(variableDefinitionChallenge.id, 1, 'Pensá en un cofre con una etiqueta.'),
+  const [zonesCount, levelsCount, challengesCount, hintsCount] = await prisma.$transaction([
+    upsertZones,
+    upsertLevels,
+    upsertChallenges,
+    upsertHints,
   ]);
-  logger.info(`Seed content: zona ${logicZone.slug} con 2 niveles y 3 desafíos`);
+  logger.info(
+    `Seed content: ${zonesCount} zonas, ${levelsCount} niveles, ${challengesCount} desafíos, ${hintsCount} pistas`,
+  );
 }
 
 seedContent()
